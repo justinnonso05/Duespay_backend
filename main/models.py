@@ -1,12 +1,6 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import User
 import uuid
-
-# Custom user model for admin
-class AdminUser(AbstractUser):
-    # AbstractUser already includes: username, email, first_name, last_name, etc.
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
 
 
 # PaySpace model
@@ -18,14 +12,13 @@ class PaySpace(models.Model):
         ('other', 'Other'),
     ]
 
-    admin = models.OneToOneField(AdminUser, on_delete=models.CASCADE, related_name='pay_space')
+    admin = models.OneToOneField(User, on_delete=models.CASCADE, related_name='pay_space')
     space_name = models.CharField(max_length=100, unique=True)
     organization_type = models.CharField(max_length=20, choices=ORG_CHOICES)
     faculty = models.CharField(max_length=100, blank=True, null=True)
     department = models.CharField(max_length=100, blank=True, null=True)
     hall = models.CharField(max_length=100, blank=True, null=True)
-    logo = models.ImageField(upload_to='logos/')
-    is_active = models.BooleanField(default=True)
+    logo = models.ImageField(upload_to='DuesPay/logos/')
 
     def __str__(self):
         return f"{self.space_name} ({self.organization_type})"
@@ -53,6 +46,8 @@ class PaymentItem(models.Model):
     title = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.title} - {self.status}"
@@ -80,7 +75,7 @@ class Transaction(models.Model):
     payment_items = models.ManyToManyField(PaymentItem)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     reference_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    proof_of_payment = models.FileField(upload_to='proofs/')
+    proof_of_payment = models.FileField(upload_to='DuesPay/proofs/')
     is_verified = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
@@ -91,7 +86,7 @@ class Transaction(models.Model):
 # Transaction Receipt model
 class TransactionReceipt(models.Model):
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='receipt')
-    pdf_file = models.FileField(upload_to='receipts/')
+    pdf_file = models.FileField(upload_to='DuesPay/receipts/')
     receipt_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     issued_at = models.DateTimeField(auto_now_add=True)
 
