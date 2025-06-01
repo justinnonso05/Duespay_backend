@@ -44,3 +44,21 @@ class AssociationSerializer(serializers.ModelSerializer):
         model = Association
         fields = "__all__"
         read_only_fields = ['admin', 'bank_account', 'payment_items']
+
+class TransactionSerializer(serializers.ModelSerializer):
+    # payment_items = PaymentItemSerializer(many=True, read_only=True)
+    payment_item_titles = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Transaction
+        fields = '__all__'
+        read_only_fields = ['payer', 'payment_item']
+
+    def get_payment_item_titles(self, obj):
+        return [item.title for item in obj.payment_items.all()]
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['payer'] = user.payer
+        return super().create(validated_data)
+

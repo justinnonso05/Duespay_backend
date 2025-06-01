@@ -16,7 +16,7 @@ class Association(models.Model):
     association_name = models.CharField(max_length=255, unique=True, default="other")
     association_short_name = models.CharField(max_length=50, unique=True, default="other")
     Association_type = models.CharField(max_length=20, choices=ASS_CHOICES, default="Other")
-    logo = models.ImageField(upload_to='DuesPay/logos/', default="/DuesPay/logos/others.png")
+    logo = models.ImageField(upload_to='logos/', default="logos/default.png")
 
     def __str__(self):
         return f"{self.association_short_name} ({self.Association_type})"
@@ -56,12 +56,11 @@ class Payer(models.Model):
     association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='payers')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20)
-    matric_number = models.CharField(max_length=50)
+    matric_number = models.CharField(max_length=50, unique=True)
     faculty = models.CharField(max_length=100, blank=True, null=True)
     department = models.CharField(max_length=100, blank=True, null=True)
-    hall = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} - {self.matric_number}"
