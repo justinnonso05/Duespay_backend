@@ -3,30 +3,28 @@ from django.contrib.auth.models import User
 import uuid
 
 
-# PaySpace model
-class PaySpace(models.Model):
-    ORG_CHOICES = [
+# Association model
+class Association(models.Model):
+    ASS_CHOICES = [
         ('hall', 'Hall'),
         ('department', 'Department'),
         ('faculty', 'Faculty'),
         ('other', 'Other'),
     ]
 
-    admin = models.OneToOneField(User, on_delete=models.CASCADE, related_name='pay_space')
-    space_name = models.CharField(max_length=100, unique=True)
-    organization_type = models.CharField(max_length=20, choices=ORG_CHOICES)
-    faculty = models.CharField(max_length=100, blank=True, null=True)
-    department = models.CharField(max_length=100, blank=True, null=True)
-    hall = models.CharField(max_length=100, blank=True, null=True)
-    logo = models.ImageField(upload_to='DuesPay/logos/')
+    admin = models.OneToOneField(User, on_delete=models.CASCADE, related_name='association')
+    association_name = models.CharField(max_length=255, unique=True, default="other")
+    association_short_name = models.CharField(max_length=50, unique=True, default="other")
+    Association_type = models.CharField(max_length=20, choices=ASS_CHOICES, default="Other")
+    logo = models.ImageField(upload_to='DuesPay/logos/', default="/DuesPay/logos/others.png")
 
     def __str__(self):
-        return f"{self.space_name} ({self.organization_type})"
+        return f"{self.association_short_name} ({self.Association_type})"
 
 
 # Receiver Bank Account model
 class ReceiverBankAccount(models.Model):
-    pay_space = models.OneToOneField(PaySpace, on_delete=models.CASCADE, related_name='bank_account')
+    association = models.OneToOneField(Association, on_delete=models.CASCADE, related_name='bank_account')
     bank_name = models.CharField(max_length=100)
     account_name = models.CharField(max_length=100)
     account_number = models.CharField(max_length=20)
@@ -42,7 +40,7 @@ class PaymentItem(models.Model):
         ('optional', 'Optional'),
     ]
 
-    pay_space = models.ForeignKey(PaySpace, on_delete=models.CASCADE, related_name='payment_items')
+    association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='payment_items')
     title = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
@@ -55,7 +53,7 @@ class PaymentItem(models.Model):
 
 # Payer model
 class Payer(models.Model):
-    pay_space = models.ForeignKey(PaySpace, on_delete=models.CASCADE, related_name='payers')
+    association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='payers')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField()
@@ -72,6 +70,7 @@ class Payer(models.Model):
 # Transaction model
 class Transaction(models.Model):
     payer = models.ForeignKey(Payer, on_delete=models.CASCADE, related_name='transactions')
+    association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='transactions')
     payment_items = models.ManyToManyField(PaymentItem)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     reference_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PaySpace, PaymentItem
+from .models import Association, PaymentItem, Transaction, ReceiverBankAccount
 from django.contrib.auth.models import User
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -19,12 +19,28 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
 
-class PaySpaceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PaySpace
-        exclude = ['admin']
-
 class PaymentItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentItem
-        exclude = ['pay_space']
+        exclude = ['association']
+
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields = '__all__'
+
+class ReceiverBankAccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReceiverBankAccount
+        fields = ['bank_name', 'account_name', 'account_number']
+        read_only_fields = ['association']
+
+class AssociationSerializer(serializers.ModelSerializer):
+    bank_account = ReceiverBankAccountSerializer(read_only=True)
+    payment_items = PaymentItemSerializer(many=True, read_only=True)
+    # payers = PayerSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Association
+        fields = "__all__"
+        read_only_fields = ['admin', 'bank_account', 'payment_items']
