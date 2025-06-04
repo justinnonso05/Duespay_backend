@@ -2,23 +2,29 @@ import json
 from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.contrib.auth.models import User
+from .models import AdminUser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .services import VerificationService
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomTokenObtainPairSerializer
 from .models import (
     Association, PaymentItem, ReceiverBankAccount, Payer,
     TransactionReceipt, Transaction
-    )
+)
 from .serializers import (
     AssociationSerializer, PaymentItemSerializer, 
     RegisterSerializer, TransactionSerializer, 
     ReceiverBankAccountSerializer
-    )
+)
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
-    queryset = User.objects.all()
+    queryset = AdminUser.objects.all()
 
 class AssociationViewSet(viewsets.ModelViewSet):
     queryset = Association.objects.all()

@@ -35,6 +35,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -54,6 +55,15 @@ INSTALLED_APPS = [
     'cloudinary',             
     'cloudinary_storage',
 ]
+
+UNFOLD = {
+    "SITE_TITLE": "Duespay Super Admin Dashboard",
+    "SITE_HEADER": "DuesPay Super Admin",
+    "SITE_BRAND": "DuesPay",
+    "SHOW_HISTORY": True,
+    "COLLAPSIBLE_NAV": True,
+}
+
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',  # React app
@@ -87,7 +97,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-
+AUTH_USER_MODEL = 'main.AdminUser'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -169,6 +179,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
