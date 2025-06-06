@@ -67,16 +67,21 @@ class AssociationSerializer(serializers.ModelSerializer):
         read_only_fields = ['admin', 'bank_account', 'payment_items']
 
 class TransactionSerializer(serializers.ModelSerializer):
-    # payment_items = PaymentItemSerializer(many=True, read_only=True)
     payment_item_titles = serializers.SerializerMethodField()
+    payer_first_name = serializers.CharField(source='payer.first_name', read_only=True)
+    payer_last_name = serializers.CharField(source='payer.last_name', read_only=True)
+    payer_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
         fields = '__all__'
-        read_only_fields = ['payer', 'payment_item']
+        read_only_fields = ['payer_name', 'payment_item']
 
     def get_payment_item_titles(self, obj):
         return [item.title for item in obj.payment_items.all()]
+
+    def get_payer_name(self, obj):
+        return f"{obj.payer.first_name} {obj.payer.last_name}"
 
     def create(self, validated_data):
         user = self.context['request'].user

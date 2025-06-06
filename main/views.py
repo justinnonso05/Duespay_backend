@@ -2,14 +2,14 @@ import json
 from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import AdminUser
+from django.db import models
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .services import VerificationService
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import CustomTokenObtainPairSerializer
 from .models import (
     Association, PaymentItem, ReceiverBankAccount, Payer,
-    TransactionReceipt, Transaction
+    TransactionReceipt, Transaction, AdminUser
 )
 from .serializers import (
     AssociationSerializer, PaymentItemSerializer, 
@@ -32,7 +32,6 @@ class AssociationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Return only the association for the authenticated user
         association = getattr(self.request.user, 'association', None)
         if association:
             return Association.objects.filter(pk=association.pk)
@@ -70,6 +69,47 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(payer=self.request.user.payer)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset()).order_by('-submitted_at')
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            data = serializer.data
+        else:
+            serializer = self.get_serializer(queryset, many=True)
+            data = serializer.data
+
+        # --- Meta Data Calculation ---
+        # Total Collections
+        # models = 
+        total_collections = queryset.aggregate(total=models.Sum('amount_paid'))['total'] or 0
+
+        # Completed Payments (assuming is_verified=True means completed)
+        completed_count = queryset.filter(is_verified=True).count()
+
+        # Pending Payments (assuming is_verified=False means pending)
+        pending_count = queryset.filter(is_verified=False).count()
+
+        # Example: Calculate percentage changes (dummy values, replace with your logic)
+        # You can compare with previous month, week, etc.
+        percent_collections = "+12%"  # Replace with actual calculation
+        percent_completed = "+8%"     # Replace with actual calculation
+        percent_pending = "-2%"       # Replace with actual calculation
+
+        meta = {
+            "total_collections": total_collections,
+            "completed_payments": completed_count,
+            "pending_payments": pending_count,
+            "percent_collections": percent_collections,
+            "percent_completed": percent_completed,
+            "percent_pending": percent_pending,
+        }
+
+        paginated_response = self.get_paginated_response(data)
+        response_data = paginated_response.data
+        response_data['meta'] = meta
+        return Response(response_data)
 
 
 class ReceiverBankAccountViewSet(viewsets.ModelViewSet):

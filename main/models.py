@@ -1,6 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 import uuid
+import random
+import string
+
+def generate_unique_reference_id():
+    digits4 = ''.join(random.choices(string.digits, k=4))
+    digits3 = ''.join(random.choices(string.digits, k=3))
+    letters2 = ''.join(random.choices(string.ascii_uppercase, k=2))
+    return f"tx-{digits4}-{digits3}-{letters2}"
 
 class AdminUser(AbstractUser):
     is_first_login = models.BooleanField(default=True)
@@ -75,10 +83,19 @@ class Transaction(models.Model):
     association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='transactions')
     payment_items = models.ManyToManyField(PaymentItem)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
-    reference_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    reference_id = models.CharField(default=generate_unique_reference_id, unique=True, editable=False, max_length=20)
     proof_of_payment = models.FileField(upload_to='DuesPay/proofs/')
     is_verified = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.reference_id:
+            while True:
+                ref = self.generate_unique_reference_id()
+                if not Transaction.objects.filter(reference_id=ref).exists():
+                    self.reference_id = ref
+                    break
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Transaction {self.reference_id} by {self.payer}"
