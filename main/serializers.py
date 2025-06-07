@@ -1,8 +1,14 @@
 from rest_framework import serializers
-from .models import Association, PaymentItem, Transaction, ReceiverBankAccount
+from .models import Association, Payer, PaymentItem, Transaction, ReceiverBankAccount
 from .models import AdminUser
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdminUser
+        fields = ['username', 'email', 'first_name', 'last_name', 'phone_number']
+        read_only_fields = ['is_first_login']
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -87,4 +93,19 @@ class TransactionSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['payer'] = user.payer
         return super().create(validated_data)
+    
+class PayerSerializer(serializers.ModelSerializer):
+    total_transactions = serializers.SerializerMethodField()
 
+    class Meta:
+        model = Payer
+        fields = '__all__'
+        read_only_fields = ['association']
+
+    def get_total_transactions(self, obj):
+        return obj.transactions.count()
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['association'] = user.association
+        return super().create(validated_data)

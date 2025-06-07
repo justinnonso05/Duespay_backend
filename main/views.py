@@ -6,7 +6,7 @@ from django.db import models
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .services import VerificationService
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import CustomTokenObtainPairSerializer
+from .serializers import AdminUserSerializer, CustomTokenObtainPairSerializer, PayerSerializer
 from .models import (
     Association, PaymentItem, ReceiverBankAccount, Payer,
     TransactionReceipt, Transaction, AdminUser
@@ -16,6 +16,19 @@ from .serializers import (
     RegisterSerializer, TransactionSerializer, 
     ReceiverBankAccountSerializer
 )
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = AdminUserSerializer  # or AdminUserSerializer if you want admin info
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        # Return the current user (AdminUser or Payer)
+        user = self.request.user
+        # If you want to return the Payer profile linked to the user:
+        if hasattr(user, 'payer'):
+            return user.payer
+        return user  # fallback for AdminUser
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
@@ -52,20 +65,77 @@ class PaymentItemViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentItemSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        # Return only payment items for the association of the authenticated user
-        association = getattr(self.request.user, 'association', None)
-        if association:
-            return PaymentItem.objects.filter(association=association)
-        return PaymentItem.objects.none()
-
     def perform_create(self, serializer):
-        serializer.save(association=self.request.user.association)
+        association = self.request.user.association
+        serializer.save(association=association)
 
+    def get_queryset(self):
+        association = getattr(self.request.user, 'association', None)
+        queryset = PaymentItem.objects.none()
+        if association:
+            queryset = PaymentItem.objects.filter(association=association)
+
+        # Search by title
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(title__icontains=search)
+
+        # Filter by is_active (status)
+        status = self.request.query_params.get('status')
+        if status is not None:
+            if status.lower() == 'true':
+                queryset = queryset.filter(is_active=True)
+            elif status.lower() == 'false':
+                queryset = queryset.filter(is_active=False)
+
+        # Filter by type (status field: 'optional' or 'compulsory')
+        type_param = self.request.query_params.get('type')
+        if type_param:
+            queryset = queryset.filter(status__iexact=type_param)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if not queryset.exists():
+            return Response({"results": [], "count": 0, "message": "No payment items found."})
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+        
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        association = getattr(self.request.user, 'association', None)
+        queryset = Transaction.objects.none()
+        if association:
+            queryset = Transaction.objects.filter(association=association)
+
+        # Filter by verification status
+        status_param = self.request.query_params.get('status')
+        if status_param is not None:
+            if status_param.lower() == 'verified':
+                queryset = queryset.filter(is_verified=True)
+            elif status_param.lower() == 'unverified':
+                queryset = queryset.filter(is_verified=False)
+
+        # Search by payer name or reference id
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                models.Q(reference_id__icontains=search) |
+                models.Q(payer__first_name__icontains=search) |
+                models.Q(payer__last_name__icontains=search) |
+                models.Q(payer__matric_number__icontains=search)
+            )
+
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(payer=self.request.user.payer)
@@ -116,6 +186,12 @@ class ReceiverBankAccountViewSet(viewsets.ModelViewSet):
     queryset = ReceiverBankAccount.objects.all()
     serializer_class = ReceiverBankAccountSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        association = getattr(self.request.user, 'association', None)
+        if association:
+            return ReceiverBankAccount.objects.filter(association=association)
+        return ReceiverBankAccount.objects.none()
 
     def perform_create(self, serializer):
         association = self.request.user.association
@@ -177,3 +253,51 @@ class TransactionCreateView(APIView):
         transaction.save()
 
         return Response({'success': True, 'transaction_id': transaction.id}, status=201)
+    
+class PayerViewSet(viewsets.ModelViewSet):
+    queryset = Payer.objects.all()
+    serializer_class = PayerSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        association = getattr(self.request.user, 'association', None)
+        queryset = Payer.objects.none()
+        if association:
+            queryset = Payer.objects.filter(association=association)
+
+        # Search by name, matric number, email, faculty, department
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                models.Q(first_name__icontains=search) |
+                models.Q(last_name__icontains=search) |
+                models.Q(matric_number__icontains=search) |
+                models.Q(email__icontains=search) |
+                models.Q(faculty__icontains=search) |
+                models.Q(department__icontains=search)
+            )
+
+        # Filter by faculty
+        faculty = self.request.query_params.get('faculty')
+        if faculty:
+            queryset = queryset.filter(faculty__iexact=faculty)
+
+        # Filter by department
+        department = self.request.query_params.get('department')
+        if department:
+            queryset = queryset.filter(department__iexact=department)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(association=self.request.user.association)
+        
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+
+        return Response(serializer.data)
