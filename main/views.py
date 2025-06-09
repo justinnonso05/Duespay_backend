@@ -4,9 +4,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db import models
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .services import VerificationService
+from .services import VerificationService, PayerService
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import AdminUserSerializer, CustomTokenObtainPairSerializer, PayerSerializer
+from .serializers import AdminUserSerializer, CustomTokenObtainPairSerializer, PayerCheckSerializer, PayerSerializer
 from .models import (
     Association, PaymentItem, ReceiverBankAccount, Payer,
     TransactionReceipt, Transaction, AdminUser
@@ -230,18 +230,18 @@ class TransactionCreateView(APIView):
         except Association.DoesNotExist:
             return Response({"error": "Association not found."}, status=status.HTTP_404_NOT_FOUND)
         
-        payer, _ = Payer.objects.get_or_create(
-            association=association,
-            matric_number=payer_data['matricNumber'],
-            defaults={
-                'first_name': payer_data['firstName'],
-                'last_name': payer_data['lastName'],
-                'email': payer_data['email'],
-                'phone_number': payer_data.get('phoneNumber', ''),
-                'faculty': payer_data.get('faculty', ''),
-                'department': payer_data.get('department', ''),
-            }
+        payer, error = PayerService.check_or_update_payer(
+            association,
+            payer_data['matricNumber'],
+            payer_data['email'],
+            payer_data.get('phoneNumber', ''),
+            payer_data['firstName'],
+            payer_data['lastName'],
+            payer_data.get('faculty', ''),
+            payer_data.get('department', '')
         )
+        if error:
+            return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
 
         transaction = Transaction.objects.create(
             payer=payer,
@@ -253,6 +253,39 @@ class TransactionCreateView(APIView):
         transaction.save()
 
         return Response({'success': True, 'transaction_id': transaction.id}, status=201)
+    
+class PayerCheckView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PayerCheckSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = serializer.validated_data
+
+        assoc_short_name = data.get('association_short_name')
+        try:
+            association = Association.objects.get(association_short_name=assoc_short_name)
+        except Association.DoesNotExist:
+            return Response({"error": "Association not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        payer, error = PayerService.check_or_update_payer(
+            association,
+            data['matric_number'],
+            data['email'],
+            data['phone_number'],
+            data['first_name'],
+            data['last_name'],
+            data.get('faculty', ''),
+            data.get('department', '')
+        )
+        if error:
+            return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "success": True,
+            "payer_id": payer.id,
+            "message": "Payer found or updated successfully."
+        }, status=200)
     
 class PayerViewSet(viewsets.ModelViewSet):
     queryset = Payer.objects.all()

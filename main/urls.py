@@ -4,7 +4,7 @@ from .views import (
     AssociationViewSet, ProofVerificationView, 
     PaymentItemViewSet, TransactionViewSet, 
     ReceiverBankAccountViewSet, RetrieveAssociationViewSet,
-    TransactionCreateView, PayerViewSet, UserProfileView
+    TransactionCreateView, PayerViewSet, UserProfileView, PayerCheckView
 )
 
 router = DefaultRouter()
@@ -20,4 +20,5 @@ urlpatterns = router.urls + [
     path('api/verify-proof/', ProofVerificationView.as_view(), name='verify-proof'),
     path('api/transaction/create/', TransactionCreateView.as_view(), name='transaction-create'),
     path('adminuser/', UserProfileView.as_view(), name='user-profile'),
+    path('payer-check/', PayerCheckView.as_view(), name='payer-check'),
 ]

@@ -109,3 +109,13 @@ class PayerSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['association'] = user.association
         return super().create(validated_data)
+    
+class PayerCheckSerializer(serializers.Serializer):
+    association_short_name = serializers.CharField()
+    matric_number = serializers.CharField()
+    email = serializers.EmailField()
+    phone_number = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    faculty = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    department = serializers.CharField(required=False, allow_blank=True, allow_null=True)
