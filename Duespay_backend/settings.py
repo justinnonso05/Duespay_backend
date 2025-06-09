@@ -67,7 +67,7 @@ UNFOLD = {
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',  # React app
-    'https://your-production-domain.com',  # Replace with your production domain
+    'https://duespay.vercel.app',  # Replace with your production domain
 ]
 CORS_ALLOW_CREDENTIALS = True
 
