@@ -59,7 +59,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 class ReceiverBankAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReceiverBankAccount
-        fields = ['bank_name', 'account_name', 'account_number']
+        fields = ['id','bank_name', 'account_name', 'account_number']
         read_only_fields = ['association']
 
 class AssociationSerializer(serializers.ModelSerializer):
