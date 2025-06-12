@@ -26,11 +26,12 @@ def send_admin_new_transaction_email(admin, association, transaction):
         [admin.email],
     )
     email.attach_alternative(html_content, "text/html")
-    email.send(fail_silently=True)
+    email.send(fail_silently=False)
 
 def send_payer_transaction_verified_email(payer, transaction):
     print("Sending email to payer:", payer.email)
-    print(settings.DEFAULT_FROM_EMAIL)
+    print(settings.EMAIL_HOST_USER)
+    print(settings.EMAIL_HOST_PASSWORD)
     subject = "Your Payment Has Been Verified"
     context = {
         "payer": payer,
@@ -50,4 +51,4 @@ def send_payer_transaction_verified_email(payer, transaction):
         [payer.email],
     )
     email.attach_alternative(html_content, "text/html")
-    email.send(fail_silently=True)
+    email.send(fail_silently=False)
