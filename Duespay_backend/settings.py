@@ -195,5 +195,7 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = f"DUESPAY <{EMAIL_HOST_USER}>"
 
+OCR_SPACE_API_KEY = config('OCR_SPACE_API_KEY', default='helloworld')
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

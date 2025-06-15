@@ -6,7 +6,11 @@ from django.db import models
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .services import VerificationService, PayerService
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import AdminUserSerializer, CustomTokenObtainPairSerializer, PayerCheckSerializer, PayerSerializer
+from .serializers import (
+    AdminUserSerializer, CustomTokenObtainPairSerializer, 
+    PayerCheckSerializer, PayerSerializer, 
+    ProofAndTransactionSerializer,
+)
 from .models import (
     Association, PaymentItem, ReceiverBankAccount, Payer,
     TransactionReceipt, Transaction, AdminUser
@@ -197,39 +201,43 @@ class ReceiverBankAccountViewSet(viewsets.ModelViewSet):
         association = self.request.user.association
         serializer.save(association=association)
 
-class ProofVerificationView(APIView):
-    def post(self, request):
-        proof_file = request.FILES.get('proof')
-        if not proof_file:
-            return Response({"error": "Proof file is required."}, status=status.HTTP_400_BAD_REQUEST)   
-        verification_service = VerificationService(proof_file)
-        if verification_service.verify_proof():
-            return Response({"message": "Proof verified successfully.", "verified": True}, status=status.HTTP_200_OK)
-        return Response({"error": "Proof verification failed.", "verified": False}, status=status.HTTP_400_BAD_REQUEST)
-
-class TransactionCreateView(APIView):
+class ProofAndTransactionView(generics.GenericAPIView):
     permission_classes = [AllowAny]
-    serializer = TransactionSerializer
+    serializer_class = ProofAndTransactionSerializer
 
     def post(self, request):
-        data = request.data
-        assoc_short_name = data.get('association_short_name')
-        payer_data = data.get('payer')
-        if isinstance(payer_data, str):
-            payer_data = json.loads(payer_data)
-            
-        payment_item_ids = request.data.get('payment_item_ids')
-        if isinstance(payment_item_ids, str):
-            payment_item_ids = json.loads(payment_item_ids)
-            
-        amount_paid = data.get('amount_paid')
-        proof_file = request.FILES.get('proof_of_payment')
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        assoc_short_name = data['association_short_name']
+        payer_data = data['payer']
+        payment_item_ids = data['payment_item_ids']
+        amount_paid = data['amount_paid']
+        proof_file = data['proof_file']
 
         try:
             association = Association.objects.get(association_short_name=assoc_short_name)
         except Association.DoesNotExist:
             return Response({"error": "Association not found."}, status=status.HTTP_404_NOT_FOUND)
-        
+
+        payment_items = PaymentItem.objects.filter(id__in=payment_item_ids)
+        if payment_items.count() != len(payment_item_ids):
+            return Response({"error": "One or more payment items not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            bank_account = ReceiverBankAccount.objects.get(association=association)
+        except ReceiverBankAccount.DoesNotExist:
+            return Response({"error": "Bank account not found for association."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Verification
+        verifier = VerificationService(proof_file, amount_paid, payment_items, bank_account)
+        verified, message = verifier.verify_proof()
+        if not verified:
+            return Response({"verified": False, "error": message}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Payer logic
         payer, error = PayerService.check_or_update_payer(
             association,
             payer_data['matricNumber'],
@@ -243,16 +251,34 @@ class TransactionCreateView(APIView):
         if error:
             return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Create transaction
         transaction = Transaction.objects.create(
             payer=payer,
             association=association,
             amount_paid=amount_paid,
-            proof_of_payment=proof_file
+            proof_of_payment=proof_file,
+            is_verified=False
         )
-        transaction.payment_items.set(PaymentItem.objects.filter(id__in=payment_item_ids))
+        transaction.payment_items.set(payment_items)
         transaction.save()
 
-        return Response({'success': True, 'transaction_id': transaction.id}, status=201)
+        # Prepare items paid for
+        items_paid = [
+            {
+                "id": item.id,
+                "title": item.title,
+                "amount": item.amount,
+                "status": item.status,
+            }
+            for item in payment_items
+        ]
+
+        return Response({
+            'success': True,
+            'transaction_id': transaction.id,
+            'reference_id': transaction.reference_id,
+            'items_paid': items_paid,
+        }, status=201)
     
 class PayerCheckView(APIView):
     permission_classes = [AllowAny]
