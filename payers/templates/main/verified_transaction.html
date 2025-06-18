@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Verified</title>
+    <style>
+        body {
+            background: #fff;
+            color: #0F111F;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 32px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(15,17,31,0.08);
+            border: 1px solid #ececec;
+            background: #fff;
+        }
+        .header {
+            background: #7C3AED;
+            color: #fff;
+            padding: 24px 0 16px 0;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+        .content {
+            padding: 24px;
+        }
+        .label {
+            color: #7C3AED;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 32px;
+            color: #888;
+            font-size: 13px;
+            text-align: center;
+        }
+        .details-table {
+            width: 100%;
+            margin-top: 16px;
+            border-collapse: collapse;
+        }
+        .details-table td {
+            padding: 6px 0;
+        }
+        .details-table .label {
+            width: 140px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Payment Verified</h2>
+        </div>
+        <div class="content">
+            <p>Dear <strong>{{ payer.first_name }}</strong>,</p>
+            <p>
+                Your payment has been verified. Thank you for your payment to <strong>{{ transaction.association.association_name }}</strong>.
+            </p>
+            <table class="details-table">
+                <tr>
+                    <td class="label">Reference ID:</td>
+                    <td>{{ transaction.reference_id }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Amount Paid:</td>
+                    <td>&#8358;{{ transaction.amount_paid }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Date:</td>
+                    <td>{{ transaction.submitted_at|date:"M d, Y H:i" }}</td>
+                </tr>
+            </table>
+            <p style="margin-top: 24px;">
+                Best regards,<br>
+                <span style="color:#7C3AED;">DuesPay Team</span>
+            </p>
+        </div>
+        <div class="footer">
+            &copy; {{ now|date:"Y" }} DuesPay &mdash; Powered by DuesPay
+        </div>
+    </div>
+</body>
+</html>
