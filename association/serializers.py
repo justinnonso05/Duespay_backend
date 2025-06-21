@@ -13,3 +13,11 @@ class AssociationSerializer(serializers.ModelSerializer):
         model = Association
         fields = "__all__"
         read_only_fields = ['admin', 'bank_account', 'payment_items']
+
+    # def create(self, validated_data):
+    #     validated_data['association_short_name'] = validated_data['association_short_name'].lower()
+    #     association = Association.objects.create_association(
+    #         association_short_name=validated_data['association_short_name']
+    #     )
+
+    #     return association

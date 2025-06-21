@@ -15,7 +15,11 @@ class AssociationViewSet(viewsets.ModelViewSet):
         return Association.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(admin=self.request.user)
+        association_short_name = association_short_name.lower()
+        serializer.save(
+            admin=self.request.user,
+            association_short_name=association_short_name
+        )
 
 
 class RetrieveAssociationViewSet(generics.RetrieveAPIView):

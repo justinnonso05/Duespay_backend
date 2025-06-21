@@ -5,6 +5,9 @@ from django.db import models
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .services import VerificationService
 from .models import Transaction
+from association.models import Association
+from payers.services import PayerService
+from payments.models import PaymentItem, ReceiverBankAccount
 from .serializers import TransactionSerializer, ProofAndTransactionSerializer
 
 class TransactionViewSet(viewsets.ModelViewSet):
@@ -51,9 +54,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(queryset, many=True)
             data = serializer.data
 
-        # --- Meta Data Calculation ---
-        # Total Collections
-        # models = 
+       
         total_collections = queryset.aggregate(total=models.Sum('amount_paid'))['total'] or 0
 
         # Completed Payments (assuming is_verified=True means completed)
@@ -62,11 +63,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
         # Pending Payments (assuming is_verified=False means pending)
         pending_count = queryset.filter(is_verified=False).count()
 
-        # Example: Calculate percentage changes (dummy values, replace with your logic)
-        # You can compare with previous month, week, etc.
-        percent_collections = "+12%"  # Replace with actual calculation
-        percent_completed = "+8%"     # Replace with actual calculation
-        percent_pending = "-2%"       # Replace with actual calculation
+        percent_collections = "+12%" 
+        percent_completed = "+8%"    
+        percent_pending = "-2%"      
 
         meta = {
             "total_collections": total_collections,

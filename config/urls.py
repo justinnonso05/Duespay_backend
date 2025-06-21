@@ -16,6 +16,7 @@ urlpatterns = [
     path('', include('payers.urls')),
     path('', include('payments.urls')),
     path('', include('transactions.urls')),
+    path('', include('main.urls')),
 
     # auth
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),

@@ -9,7 +9,7 @@ def send_admin_new_transaction_email(admin, association, transaction):
         "association": association,
         "transaction": transaction,
     }
-    html_content = render_to_string("main/new_transaction.html", context)
+    html_content = render_to_string("transactions/new_transaction.html", context)
     text_content = (
         f"Dear {admin.first_name},\n\n"
         f"A new transaction has been made in your association ({association.association_name}).\n"

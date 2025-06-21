@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Payment Verified</title>
+    <title>New Transaction Alert</title>
     <style>
         body {
             background: #fff;
@@ -54,17 +54,21 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Payment Verified</h2>
+            <h2>New Transaction Alert</h2>
         </div>
         <div class="content">
-            <p>Dear <strong>{{ payer.first_name }}</strong>,</p>
+            <p>Dear <strong>{{ admin.first_name }}</strong>,</p>
             <p>
-                Your payment has been verified. Thank you for your payment to <strong>{{ transaction.association.association_name }}</strong>.
+                A new transaction has been made in your association <strong>{{ association.association_name }}</strong>.
             </p>
             <table class="details-table">
                 <tr>
                     <td class="label">Reference ID:</td>
                     <td>{{ transaction.reference_id }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Payer:</td>
+                    <td>{{ transaction.payer.first_name }} {{ transaction.payer.last_name }}</td>
                 </tr>
                 <tr>
                     <td class="label">Amount Paid:</td>
@@ -76,12 +80,11 @@
                 </tr>
             </table>
             <p style="margin-top: 24px;">
-                Best regards,<br>
-                <span style="color:#7C3AED;">DuesPay Team</span>
+                Please log in to your dashboard <a href="https://duespay.vercel.app/dashboard/transactions">here</a> for more details.
             </p>
         </div>
         <div class="footer">
-            &copy; {{ now|date:"Y" }} DuesPay &mdash; Powered by DuesPay
+            {{ now|date:"Y" }} <strong>{{ association.association_name }}</strong> <br />Powered by DuesPay
         </div>
     </div>
 </body>
