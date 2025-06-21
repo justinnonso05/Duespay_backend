@@ -30,4 +30,6 @@ DATABASES = {
 
 ALLOWED_HOSTS = [
     'https://duespay.vercel.app',
+    'duespay.onrender.com',
+    # add host production server here
 ]
