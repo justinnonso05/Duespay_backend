@@ -28,6 +28,14 @@ DATABASES = {
     )
 }
 
+MIDDLEWARE.insert(
+    MIDDLEWARE.index('django.middleware.security.SecurityMiddleware') + 1,
+    'whitenoise.middleware.WhiteNoiseMiddleware'
+)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
 ALLOWED_HOSTS = [
     'https://duespay.vercel.app',
     'duespay.onrender.com',

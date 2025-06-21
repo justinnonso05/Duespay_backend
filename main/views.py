@@ -1,3 +1,4 @@
+from django.shortcuts import redirect
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -5,6 +6,12 @@ from .serializers import AdminUserSerializer, CustomTokenObtainPairSerializer
 from .models import AdminUser
 from .serializers import  RegisterSerializer
 
+def base_redirect_view(request):
+    """
+    Redirects to the admin page.
+    """
+    return redirect('/admin/')  # Adjust the URL as needed for your admin page
+  
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = AdminUserSerializer  # or AdminUserSerializer if you want admin info
     permission_classes = [IsAuthenticated]
