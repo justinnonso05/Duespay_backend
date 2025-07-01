@@ -17,6 +17,7 @@ def ping_view(request):
     """
     A simple view to check if the server is running.
     """
+    print("Server is running")
     return HttpResponse("Pong", status=200)  # You can return a more complex response if needed
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
