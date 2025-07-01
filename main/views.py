@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -11,7 +12,13 @@ def base_redirect_view(request):
     Redirects to the admin page.
     """
     return redirect('/admin/')  # Adjust the URL as needed for your admin page
-  
+
+def ping_view(request):
+    """
+    A simple view to check if the server is running.
+    """
+    return HttpResponse("Pong", status=200)  # You can return a more complex response if needed
+
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = AdminUserSerializer  # or AdminUserSerializer if you want admin info
     permission_classes = [IsAuthenticated]

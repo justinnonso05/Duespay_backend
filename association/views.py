@@ -14,13 +14,6 @@ class AssociationViewSet(viewsets.ModelViewSet):
             return Association.objects.filter(pk=association.pk)
         return Association.objects.none()
 
-    def perform_create(self, serializer):
-        association_short_name = association_short_name.lower()
-        serializer.save(
-            admin=self.request.user,
-            association_short_name=association_short_name
-        )
-
 
 class RetrieveAssociationViewSet(generics.RetrieveAPIView):
     queryset = Association.objects.all()
