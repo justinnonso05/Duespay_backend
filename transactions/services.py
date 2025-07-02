@@ -68,19 +68,19 @@ class VerificationService:
         return match.group(1) if match else None
 
     def verify_proof(self):
-        # text = self.extract_text_from_proof()
-        # if not text:
-        #     return False, "Could not extract text from proof."
+        text = self.extract_text_from_proof()
+        if not text:
+            return False, "Could not extract text from proof."
 
-        # # 1. Check beneficiary name
-        # if self.bank_account.account_name.lower() not in text.lower():
-        #     return False, "Beneficiary name does not match association's bank account name."
+        # 1. Check beneficiary name
+        if self.bank_account.account_name.lower() not in text.lower():
+            return False, "Beneficiary name does not match association's bank account name."
 
-        # # 2. Check amount
-        # expected_amount_str = self.clean_amount(self.amount_paid)
-        # amounts_in_text = self.extract_amounts_from_text(text)
-        # if expected_amount_str not in amounts_in_text:
-        #     return False, "Amount paid does not match payment items total."
+        # 2. Check amount
+        expected_amount_str = self.clean_amount(self.amount_paid)
+        amounts_in_text = self.extract_amounts_from_text(text)
+        if expected_amount_str not in amounts_in_text:
+            return False, "Amount paid does not match payment items total."
 
         # 3. Check transaction date (optional, improve as needed)
         # receipt_date_str = self.extract_date_from_text(text)

@@ -87,6 +87,9 @@ class ProofAndTransactionView(generics.GenericAPIView):
     serializer_class = ProofAndTransactionSerializer
 
     def post(self, request):
+
+        # raise Exception("Intentional server error for testing")
+
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

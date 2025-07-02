@@ -11,26 +11,24 @@ def base_redirect_view(request):
     """
     Redirects to the admin page.
     """
-    return redirect('/admin/')  # Adjust the URL as needed for your admin page
+    return redirect('/admin/')  
 
 def ping_view(request):
     """
     A simple view to check if the server is running.
     """
     print("Server is running")
-    return HttpResponse("Pong", status=200)  # You can return a more complex response if needed
+    return HttpResponse("Pong", status=200)  
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
-    serializer_class = AdminUserSerializer  # or AdminUserSerializer if you want admin info
+    serializer_class = AdminUserSerializer  
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        # Return the current user (AdminUser or Payer)
         user = self.request.user
-        # If you want to return the Payer profile linked to the user:
         if hasattr(user, 'payer'):
             return user.payer
-        return user  # fallback for AdminUser
+        return user  
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
