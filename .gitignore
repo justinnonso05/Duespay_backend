@@ -5,3 +5,4 @@
 /.github
 /*.pdf
 /receipt_compact.py
+/db.sqlite3
