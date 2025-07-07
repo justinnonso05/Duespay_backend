@@ -8,7 +8,7 @@ from PIL import Image as PILImage
 from pathlib import Path
 from django.conf import settings
 from django.template.loader import render_to_string
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, mm
@@ -18,6 +18,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus.flowables import HRFlowable
 from .emails import send_receipt_email
 import logging
+from datetime import datetime
 
 class VerificationService:
     def __init__(self, proof_file, amount_paid, payment_items, bank_account):
@@ -25,7 +26,6 @@ class VerificationService:
         self.amount_paid = amount_paid
         self.bank_account = bank_account
         self.payment_items = payment_items
-        # Gemini API key should be sourced securely, e.g., from Django settings
         self.gemini_api_key = config('GEMINI_API_KEY')
         genai.configure(api_key=self.gemini_api_key)
         self.model = genai.GenerativeModel('gemini-2.0-flash')
@@ -36,7 +36,7 @@ class VerificationService:
                 self.proof_file.seek(0)
             file_bytes = self.proof_file.read()
 
-            mime_type = "application/octet-stream" # Fallback
+            mime_type = "application/octet-stream"
             if hasattr(self.proof_file, 'content_type') and self.proof_file.content_type:
                 mime_type = self.proof_file.content_type
             elif hasattr(self.proof_file, 'name'):
@@ -78,7 +78,6 @@ class VerificationService:
         return cleaned
 
     def extract_date_from_text(self, text):
-        # Very basic date extraction (improve as needed)
         import re
         match = re.search(r'(\d{4}-\d{2}-\d{2})', text)
         return match.group(1) if match else None
@@ -87,31 +86,7 @@ class VerificationService:
         text = self.extract_text_from_proof()
         if not text:
             return False, "Could not extract text from proof."
-
-        # # 1. Check beneficiary name
-        # if self.bank_account.account_name.lower() not in text.lower():
-        #     return False, "Beneficiary name does not match association's bank account name."
-
-        # # 2. Check amount
-        # expected_amount_str = self.clean_amount(self.amount_paid)
-        # amounts_in_text = self.extract_amounts_from_text(text)
-        # if expected_amount_str not in amounts_in_text:
-        #     return False, "Amount paid does not match payment items total."
-
-        # 3. Check transaction date (optional, improve as needed)
-        # receipt_date_str = self.extract_date_from_text(text)
-        # if receipt_date_str:
-        #     from datetime import datetime
-        #     receipt_date = datetime.strptime(receipt_date_str, "%Y-%m-%d").date()
-        #     for item in self.payment_items:
-        #         if hasattr(item, 'created_at') and receipt_date < item.created_at.date():
-        #             return False, "Transaction date is before payment item creation date."
-
-        # Add more checks as needed...
-
         return True, "Proof verified successfully."
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -120,27 +95,33 @@ class WatermarkCanvas(canvas.Canvas):
     
     def __init__(self, *args, **kwargs):
         self.watermark_path = kwargs.pop('watermark_path', None)
-        canvas.Canvas.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
     
     def showPage(self):
-        # Add watermark BEFORE other content
+        # Add watermark to every page
         if self.watermark_path and os.path.exists(self.watermark_path):
             self.saveState()
             
-            # Set very low opacity for watermark
-            self.setFillAlpha(0.05)
-            self.setStrokeAlpha(0.05)
+            # Set low opacity for watermark
+            self.setFillAlpha(0.08)
+            self.setStrokeAlpha(0.08)
             
-            # Calculate center position
+            # Get page dimensions
             page_width, page_height = self._pagesize
             
-            # Draw watermark in center, larger size
+            # Calculate center position for watermark
+            watermark_width = 120*mm
+            watermark_height = 90*mm
+            x = (page_width - watermark_width) / 2
+            y = (page_height - watermark_height) / 2
+            
+            # Draw watermark image
             self.drawImage(
                 self.watermark_path,
-                x=(page_width - 100*mm) / 2,  # Center horizontally
-                y=(page_height - 75*mm) / 2,  # Center vertically
-                width=100*mm,
-                height=75*mm,
+                x=x,
+                y=y,
+                width=watermark_width,
+                height=watermark_height,
                 mask='auto',
                 preserveAspectRatio=True
             )
@@ -148,7 +129,7 @@ class WatermarkCanvas(canvas.Canvas):
             self.restoreState()
         
         # Call parent's showPage
-        canvas.Canvas.showPage(self)
+        super().showPage()
 
 class ReceiptService:
     
@@ -172,28 +153,45 @@ class ReceiptService:
             with open(original_logo_path, 'wb') as f:
                 f.write(response.content)
             
-            # Open with PIL and optimize
+            # Open with PIL and create circular mask
             with PILImage.open(original_logo_path) as img:
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    # Create white background for transparency
-                    background = PILImage.new('RGB', img.size, (255, 255, 255))
-                    if img.mode == 'P':
-                        img = img.convert('RGBA')
-                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-                    img = background
+                # Convert to RGBA if not already
+                if img.mode != 'RGBA':
+                    img = img.convert('RGBA')
                 
-                # Create header logo (medium size, high quality)
-                header_logo = img.resize((120, 90), PILImage.Resampling.LANCZOS)
-                header_logo_path = temp_dir / 'temp_logo_header.jpg'
-                header_logo.save(header_logo_path, 'JPEG', quality=90, optimize=True)
+                # Create a square image (crop if needed)
+                size = min(img.size)
+                left = (img.width - size) // 2
+                top = (img.height - size) // 2
+                img = img.crop((left, top, left + size, top + size))
                 
-                # Create watermark logo (larger, much lower quality for fading)
-                watermark_logo = img.resize((400, 300), PILImage.Resampling.LANCZOS)
-                watermark_logo_path = temp_dir / 'temp_logo_watermark.jpg'
-                watermark_logo.save(watermark_logo_path, 'JPEG', quality=30, optimize=True)
+                # Create circular mask
+                mask = PILImage.new('L', (size, size), 0)
+                from PIL import ImageDraw
+                draw = ImageDraw.Draw(mask)
+                draw.ellipse((0, 0, size, size), fill=255)
+                
+                # Apply circular mask
+                circular_img = PILImage.new('RGBA', (size, size), (255, 255, 255, 0))
+                circular_img.paste(img, (0, 0))
+                circular_img.putalpha(mask)
+                
+                # Create transparent background for header logo (will blend with header color)
+                background = PILImage.new('RGBA', (size, size), (255, 255, 255, 0))
+                background.paste(circular_img, (0, 0), circular_img)
+                
+                # Create header logo (medium size, high quality) - keep transparency
+                header_logo = background.resize((100, 100), PILImage.Resampling.LANCZOS)
+                header_logo_path = temp_dir / 'temp_logo_header.png'
+                header_logo.save(header_logo_path, 'PNG')
+                
+                # Create watermark logo (larger size for background)
+                watermark_logo = background.resize((300, 300), PILImage.Resampling.LANCZOS)
+                watermark_logo_path = temp_dir / 'temp_logo_watermark.png'
+                watermark_logo.save(watermark_logo_path, 'PNG')
             
             # Create ReportLab Image object for header
-            header_img = Image(str(header_logo_path), width=30*mm, height=22*mm)
+            header_img = Image(str(header_logo_path), width=25*mm, height=25*mm)
             
             print("✅ Logo downloaded and processed!")
             return header_img, str(watermark_logo_path), [original_logo_path, header_logo_path, watermark_logo_path]
@@ -203,195 +201,197 @@ class ReceiptService:
             return None, None, []
     
     @staticmethod
-    def create_watermark_canvas_maker(watermark_path):
-        """Create a canvas maker function with watermark path"""
-        def canvas_maker(filename):
-            return WatermarkCanvas(filename, watermark_path=watermark_path)
-        return canvas_maker
-    
-    @staticmethod
     def generate_receipt_pdf(receipt):
-        """Generate PDF receipt with modern design"""
+        """Generate PDF receipt with modern styling"""
         transaction = receipt.transaction
         association = transaction.association
         
         # Get association colors and logo
-        theme_color = association.theme_color or '#2E86AB'
+        theme_color = association.theme_color or '#7C3AED'
         logo_url = association.logo_url
         
         # Download and process logo
         header_img, watermark_path, temp_files = ReceiptService.download_and_process_logo(logo_url)
         
         try:
-            # Create PDF with A5 size (more professional)
-            page_width = 210*mm  # A5 width
-            page_height = 148*mm  # A5 height
+            # Create PDF with A4 size
+            page_width, page_height = A4
             
             # Create temp file for PDF
             temp_dir = Path(settings.BASE_DIR) / 'temp'
             temp_dir.mkdir(exist_ok=True)
             pdf_path = temp_dir / f'receipt_{receipt.receipt_no}.pdf'
             
-            # Create canvas maker with watermark
-            canvas_maker = ReceiptService.create_watermark_canvas_maker(watermark_path) if watermark_path else canvas.Canvas
+            # Create custom canvas with watermark
+            def canvas_maker(filename):
+                return WatermarkCanvas(filename, watermark_path=watermark_path, pagesize=A4)
             
-            # Create document
+            # Create document with smaller content area
             doc = SimpleDocTemplate(
                 str(pdf_path),
-                pagesize=(page_width, page_height),
-                rightMargin=15*mm,
-                leftMargin=15*mm,
-                topMargin=10*mm,
-                bottomMargin=15*mm,
+                pagesize=A4,
+                rightMargin=30*mm,
+                leftMargin=30*mm,
+                topMargin=25*mm,
+                bottomMargin=25*mm,
                 canvasmaker=canvas_maker
             )
             
             elements = []
             
-            # Create curved header section
-            header_height = 25*mm
+            # Convert theme color to ReportLab color
+            theme_rgb = ReceiptService.hex_to_rgb(theme_color)
+            theme_reportlab_color = colors.Color(theme_rgb[0]/255, theme_rgb[1]/255, theme_rgb[2]/255)
             
-            # Header with logo and association info
+            # Header section with dynamic theme color
+            header_data = []
             if header_img:
-                # Create company info text
-                company_info = f"""
-                <b>{association.association_name}</b><br/>
-                <font size="8">University of Ibadan<br/>
-                Ibadan, Oyo State<br/>
-                Email: {association.admin.email if association.admin.email else 'contact@association.edu.ng'}</font>
-                """
+                # Plain text without HTML tags - split into two rows
+                association_name_line1 = association.association_name.upper()
+                association_name_line2 = f"({association.association_short_name.upper()})"
+                current_date = datetime.now().strftime("%B %d, %Y")
                 
-                company_paragraph = Paragraph(
-                    company_info,
-                    ParagraphStyle(
-                        'CompanyInfo',
-                        fontSize=10,
-                        fontName='Helvetica-Bold',
-                        alignment=TA_CENTER,
-                        textColor=colors.white,
-                        leading=12
-                    )
-                )
+                header_data = [
+                    [header_img, association_name_line1, f'Date: {current_date}'],
+                    ['', association_name_line2, '']
+                ]
                 
-                # Header table with curved design feel
-                header_data = [[header_img, company_paragraph]]
-                header_table = Table(header_data, colWidths=[40*mm, 140*mm])
+                header_table = Table(header_data, colWidths=[25*mm, 90*mm, 35*mm])
                 header_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor(theme_color)),
+                    ('BACKGROUND', (0, 0), (-1, -1), theme_reportlab_color),
+                    ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (1, 0), (1, 0), 12),
+                    ('FONTNAME', (1, 1), (1, 1), 'Helvetica'),
+                    ('FONTSIZE', (1, 1), (1, 1), 10),
+                    ('FONTNAME', (2, 0), (2, 0), 'Helvetica'),
+                    ('FONTSIZE', (2, 0), (2, 0), 9),
+                    ('TEXTCOLOR', (1, 0), (-1, -1), colors.white),
+                    ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+                    ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+                    ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('ALIGN', (0, 0), (0, 0), 'CENTER'),
-                    ('ALIGN', (1, 0), (1, 0), 'CENTER'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 10),
                     ('TOPPADDING', (0, 0), (-1, -1), 8),
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                    ('SPAN', (0, 0), (0, 1)),  # Span logo across both rows
                 ]))
-                
-                elements.append(header_table)
             else:
-                # Fallback header without logo
-                company_info = f"""
-                <b>{association.association_name}</b><br/>
-                <font size="8">University of Ibadan | Ibadan, Oyo State<br/>
-                Email: {association.admin.email if association.admin.email else 'contact@association.edu.ng'}</font>
-                """
+                # Fallback without logo
+                association_name_line1 = association.association_name.upper()
+                association_name_line2 = f"({association.association_short_name.upper()})"
+                current_date = datetime.now().strftime("%B %d, %Y")
                 
-                company_paragraph = Paragraph(
-                    company_info,
-                    ParagraphStyle(
-                        'CompanyInfo',
-                        fontSize=12,
-                        fontName='Helvetica-Bold',
-                        alignment=TA_CENTER,
-                        textColor=colors.white,
-                        leading=14
-                    )
-                )
+                header_data = [
+                    [association_name_line1, f'Date: {current_date}'],
+                    [association_name_line2, '']
+                ]
                 
-                header_table = Table([[company_paragraph]], colWidths=[180*mm])
+                header_table = Table(header_data, colWidths=[115*mm, 35*mm])
                 header_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor(theme_color)),
-                    ('ALIGN', (0, 0), (0, 0), 'CENTER'),
-                    ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 10),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                    ('TOPPADDING', (0, 0), (-1, -1), 10),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                    ('BACKGROUND', (0, 0), (-1, -1), theme_reportlab_color),
+                    ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (0, 0), 12),
+                    ('FONTNAME', (0, 1), (0, 1), 'Helvetica'),
+                    ('FONTSIZE', (0, 1), (0, 1), 10),
+                    ('FONTNAME', (1, 0), (1, 0), 'Helvetica'),
+                    ('FONTSIZE', (1, 0), (1, 0), 9),
+                    ('TEXTCOLOR', (0, 0), (-1, -1), colors.white),
+                    ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+                    ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('TOPPADDING', (0, 0), (-1, -1), 8),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 8),
                 ]))
-                
-                elements.append(header_table)
-            
-            elements.append(Spacer(1, 10*mm))
-            
-            # Receipt title and number section
-            receipt_title_data = [
-                ['RECEIPT', f'No.: {association.association_short_name}-{receipt.receipt_no}-2025'],
-                ['', f'Date: {receipt.issued_at.strftime("%d/%m/%Y")}']
-            ]
-            
-            receipt_title_table = Table(receipt_title_data, colWidths=[90*mm, 90*mm])
-            receipt_title_table.setStyle(TableStyle([
-                ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (0, 0), 16),
-                ('FONTNAME', (1, 0), (-1, -1), 'Helvetica-Bold'),
-                ('FONTSIZE', (1, 0), (-1, -1), 10),
-                ('ALIGN', (0, 0), (0, 0), 'CENTER'),
-                ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('TEXTCOLOR', (0, 0), (0, 0), colors.HexColor(theme_color)),
-            ]))
-            
-            elements.append(receipt_title_table)
+        
+            elements.append(header_table)
             elements.append(Spacer(1, 8*mm))
             
-            # Receipt details in a cleaner format
-            payer_name = f'{transaction.payer.first_name} {transaction.payer.last_name}'
+            # Title section
+            title_text = f"<b>PAYMENT RECEIPT</b>"
+            title_paragraph = Paragraph(title_text, ParagraphStyle(
+                'TitleStyle',
+                fontSize=16,
+                fontName='Helvetica-Bold',
+                alignment=TA_CENTER,
+                textColor=theme_reportlab_color,
+                spaceAfter=8*mm
+            ))
+            
+            elements.append(title_paragraph)
+            
+            # Format receipt number properly: SHORTNAME/NO/25
+            current_year_short = str(datetime.now().year)[-2:]
+            formatted_receipt_no = f"{association.association_short_name.upper()}/{receipt.receipt_no.split('_')[-1]}/{current_year_short}"
+            
+            # Receipt details in modern card layout
+            payer_name = f'{transaction.payer.first_name} {transaction.payer.last_name}'.upper()
             payment_items = ', '.join([item.title for item in transaction.payment_items.all()])
             amount_words = ReceiptService.number_to_words(float(transaction.amount_paid))
             
-            details_data = [
-                ['Received from:', payer_name],
+            # Main content in a clean bordered box
+            receipt_data = [
+                ['Receipt Number:', formatted_receipt_no],
                 ['', ''],
-                ['the sum of Rupees:', f'NGN {transaction.amount_paid:,.2f}'],
+                ['Received From:', payer_name],
                 ['', ''],
-                ['towards:', payment_items],
+                ['Amount in Words:', f'{amount_words.title()} Naira Only'],
+                ['', ''],
+                ['Payment For:', payment_items],
+                ['', ''],
+                ['Amount Paid:', f'₦{transaction.amount_paid:,.2f}'],
             ]
             
-            details_table = Table(details_data, colWidths=[40*mm, 140*mm])
-            details_table.setStyle(TableStyle([
-                ('FONTNAME', (0, 0), (0, -1), 'Helvetica'),
-                ('FONTNAME', (1, 0), (1, -1), 'Helvetica-Bold'),
+            receipt_table = Table(receipt_data, colWidths=[45*mm, 105*mm])
+            receipt_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
                 ('FONTSIZE', (0, 0), (-1, -1), 11),
-                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('LEFTPADDING', (0, 0), (-1, -1), 2),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 2),
-                ('TOPPADDING', (0, 0), (-1, -1), 4),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-                # Add underlines for the filled values
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTNAME', (1, 8), (1, 8), 'Helvetica-Bold'),  # Amount row
+                ('FONTSIZE', (1, 8), (1, 8), 14),  # Amount row
+                ('TEXTCOLOR', (1, 8), (1, 8), theme_reportlab_color),  # Amount color
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                # Modern border
+                ('BOX', (0, 0), (-1, -1), 1.5, colors.grey),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.Color(0.98, 0.98, 0.98)),
+                # Underlines for data fields
                 ('LINEBELOW', (1, 0), (1, 0), 1, colors.black),
                 ('LINEBELOW', (1, 2), (1, 2), 1, colors.black),
                 ('LINEBELOW', (1, 4), (1, 4), 1, colors.black),
+                ('LINEBELOW', (1, 6), (1, 6), 1, colors.black),
             ]))
             
-            elements.append(details_table)
+            elements.append(receipt_table)
             elements.append(Spacer(1, 15*mm))
             
-            # Amount in words section
-            amount_words_table = Table([
-                [f'({amount_words} naira only)']
-            ], colWidths=[180*mm])
+            # Modern signature section
+            signature_data = [
+                ['STAMP', 'AUTHORIZED SIGNATURE'],
+                ['', ''],
+                ['', ''],
+                ['', '____________________'],
+            ]
             
-            amount_words_table.setStyle(TableStyle([
-                ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Oblique'),
-                ('FONTSIZE', (0, 0), (0, 0), 10),
-                ('ALIGN', (0, 0), (0, 0), 'CENTER'),
-                ('TEXTCOLOR', (0, 0), (0, 0), colors.grey),
-                ('TOPPADDING', (0, 0), (0, 0), 5),
-                ('BOTTOMPADDING', (0, 0), (0, 0), 5),
+            signature_table = Table(signature_data, colWidths=[75*mm, 75*mm])
+            signature_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('FONTNAME', (1, 3), (1, 3), 'Helvetica'),
+                ('FONTSIZE', (1, 3), (1, 3), 9),
+                ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+                ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
             ]))
             
-            elements.append(amount_words_table)
+            elements.append(signature_table)
             
             # Build PDF
             doc.build(elements)
@@ -399,7 +399,7 @@ class ReceiptService:
             # Read PDF content
             with open(pdf_path, 'rb') as f:
                 pdf_content = f.read()
-            
+        
             print(f"✅ Receipt PDF generated successfully! Size: {len(pdf_content)} bytes")
             
             # Clean up temporary files
@@ -418,10 +418,10 @@ class ReceiptService:
                 if temp_file.exists():
                     temp_file.unlink()
             return None
-    
+
     @staticmethod
     def number_to_words(number):
-        """Convert number to words (simplified version)"""
+        """Convert number to words"""
         ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
                 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
                 'seventeen', 'eighteen', 'nineteen']
@@ -481,3 +481,9 @@ class ReceiptService:
         except Exception as e:
             logger.error(f"Failed to process verified transaction: {e}")
             return False
+
+    @staticmethod
+    def hex_to_rgb(hex_color):
+        """Convert hex color to RGB tuple"""
+        hex_color = hex_color.lstrip('#')
+        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))

@@ -1,6 +1,7 @@
 from django.core.mail import EmailMultiAlternatives, EmailMessage
 from django.conf import settings
 from django.template.loader import render_to_string
+from datetime import datetime
 
 def send_admin_new_transaction_email(admin, association, transaction):
     subject = "New Transaction Alert"
@@ -32,15 +33,20 @@ def send_receipt_email(receipt, pdf_content):
     """Email: Send receipt with PDF attachment to payer"""
     transaction = receipt.transaction
     association = transaction.association
-    
-    subject = f"Payment Receipt #{receipt.receipt_no} - {association.association_name}"
-    
+    current_year_short = str(datetime.now().year)[-2:]
+    receipt_no = f"{association.association_short_name}/{receipt.receipt_no}/{current_year_short}"
+
+    subject = f"Payment Receipt #{receipt_no} - {association.association_name}"
+
     context = {
         'payer_name': f"{transaction.payer.first_name} {transaction.payer.last_name}",
-        'receipt_no': f"{association.association_short_name}-{receipt.receipt_no}-2025",
+        'receipt_no': receipt_no,
         'transaction_ref': transaction.reference_id,
         'association_name': association.association_name,
+        'association_logo': association.logo.url if association.logo else '',
+        'association_no': association.admin.phone_number,
         'amount_paid': transaction.amount_paid,
+        'theme_color': association.theme_color,
     }
     
     message = render_to_string('transactions/receipt_template.html', context)

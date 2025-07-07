@@ -4,122 +4,117 @@
     <meta charset="UTF-8">
     <title>Payment Receipt - {{ association_name }}</title>
 </head>
-<body style="background: #f5f7fa; color: #0F111F; font-family: 'Segoe UI', Arial, sans-serif; padding: 32px; margin: 0;">
+<body style="background: #f5f7fa; color: #0F111F; font-family: 'Segoe UI', Arial, sans-serif; padding: 16px; margin: 0;">
     <div style="max-width: 600px; margin: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(15,17,31,0.08); border: 1px solid #e2e8f0; background: #fff; overflow: hidden;">
         
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; padding: 32px 24px; text-align: center;">
-            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">✓ Payment Confirmed</h1>
-            <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 16px;">Your receipt is ready</p>
+        <!-- Header with Association Logo -->
+        <div style="background: #7C3AED; color: #fff; padding: 24px 16px; text-align: center;">
+            {% if association_logo %}
+            <div style="margin-bottom: 16px;">
+                <img src="{{ association_logo }}" alt="{{ association_name }} Logo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%; background: #fff; border: 2px solid #e2e8f0;">
+            </div>
+            {% endif %}
+            <h1 style="margin: 0; font-size: 24px; font-weight: 700;">✓ Payment Confirmed</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">Your receipt is ready</p>
         </div>
         
         <!-- Content -->
-        <div style="padding: 32px 24px;">
-            <p style="font-size: 18px; margin-bottom: 8px;">Dear <strong>{{ payer_name }}</strong>,</p>
+        <div style="padding: 20px 16px;">
+            <p style="font-size: 16px; margin-bottom: 8px;">Dear <strong>{{ payer_name }}</strong>,</p>
             
-            <p style="color: #64748b; line-height: 1.6; margin: 16px 0;">
+            <p style="color: #64748b; line-height: 1.6; margin: 12px 0;">
                 Thank you for your payment! Your transaction has been successfully verified and processed. 
                 Below are the details of your payment receipt.
             </p>
 
             <!-- Receipt Details -->
-            <div style="background: #f8fafc; border-radius: 8px; padding: 24px; margin: 24px 0; border-left: 4px solid #10b981;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <h3 style="margin: 0; color: #1e293b;">Receipt Details</h3>
-                    <span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Verified</span>
+            <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin: 20px 0; border-left: 4px solid #7C3AED;">
+                <div style="margin-bottom: 12px;">
+                    <h3 style="margin: 0; color: #1e293b; font-size: 16px; display: inline-block;">Receipt Details</h3>
+                    <span style="background: #7C3AED; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 8px;">Verified</span>
                 </div>
                 
+                <!-- Mobile-friendly table -->
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
-                        <td style="padding: 12px 0; width: 50%; vertical-align: top;">
-                            <div style="color: #64748b; font-size: 14px; font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Receipt Number</div>
-                            <div style="color: #1e293b; font-size: 16px; font-weight: 600;">{{ receipt_no }}</div>
+                        <td style="padding: 8px 0; vertical-align: top; width: 50%;">
+                            <div style="color: #64748b; font-size: 12px; font-weight: 500; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Receipt Number</div>
+                            <div style="color: #1e293b; font-size: 14px; font-weight: 600; word-break: break-all;">{{ receipt_no }}</div>
                         </td>
-                        <td style="padding: 12px 0; width: 50%; vertical-align: top;">
-                            <div style="color: #64748b; font-size: 14px; font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Transaction Reference</div>
-                            <div style="color: #1e293b; font-size: 16px; font-weight: 600;">{{ transaction_ref }}</div>
+                        <td style="padding: 8px 0; vertical-align: top; width: 50%; padding-left: 8px;">
+                            <div style="color: #64748b; font-size: 12px; font-weight: 500; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Transaction Reference</div>
+                            <div style="color: #1e293b; font-size: 14px; font-weight: 600; word-break: break-all;">{{ transaction_ref }}</div>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding: 12px 0; vertical-align: top;">
-                            <div style="color: #64748b; font-size: 14px; font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Association</div>
-                            <div style="color: #1e293b; font-size: 16px; font-weight: 600;">{{ association_name }}</div>
+                        <td style="padding: 8px 0; vertical-align: top;">
+                            <div style="color: #64748b; font-size: 12px; font-weight: 500; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Association</div>
+                            <div style="color: #1e293b; font-size: 14px; font-weight: 600;">{{ association_name }}</div>
                         </td>
-                        <td style="padding: 12px 0; vertical-align: top;">
-                            <div style="color: #64748b; font-size: 14px; font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Payment Date</div>
-                            <div style="color: #1e293b; font-size: 16px; font-weight: 600;">{{ now|date:"M d, Y" }}</div>
+                        <td style="padding: 8px 0; vertical-align: top; padding-left: 8px;">
+                            <div style="color: #64748b; font-size: 12px; font-weight: 500; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Payment Date</div>
+                            <div style="color: #1e293b; font-size: 14px; font-weight: 600;">{{ now|date:"M d, Y" }}</div>
                         </td>
                     </tr>
                 </table>
             </div>
 
             <!-- Amount Highlight -->
-            <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; text-align: center; margin: 24px 0;">
-                <p style="font-size: 32px; font-weight: 700; color: #059669; margin: 0;">₦{{ amount_paid|floatformat:2 }}</p>
-                <p style="color: #64748b; font-size: 14px; margin: 4px 0 0 0; text-transform: uppercase; letter-spacing: 0.5px;">Amount Paid</p>
+            <div style="background: #f3f0ff; border: 2px solid #7C3AED; border-radius: 8px; padding: 16px; text-align: center; margin: 20px 0;">
+                <p style="font-size: 28px; font-weight: 700; color: #7C3AED; margin: 0;">₦{{ amount_paid|floatformat:2 }}</p>
+                <p style="color: #64748b; font-size: 12px; margin: 4px 0 0 0; text-transform: uppercase; letter-spacing: 0.5px;">Amount Paid</p>
             </div>
 
             <!-- Attachment Notice -->
-            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 24px 0;">
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 20px 0;">
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
-                        <td style="width: 40px; vertical-align: top;">
-                            <div style="background: #f59e0b; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px; text-align: center; line-height: 24px;">📎</div>
+                        <td style="width: 30px; vertical-align: top;">
+                            <div style="background: #f59e0b; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; text-align: center; line-height: 20px;">📎</div>
                         </td>
-                        <td style="vertical-align: top; padding-left: 12px;">
-                            <strong style="color: #92400e;">Receipt Attached</strong><br>
-                            <span style="color: #92400e; font-size: 14px;">Your official receipt is attached to this email as a PDF file. Please save it for your records.</span>
+                        <td style="vertical-align: top; padding-left: 8px;">
+                            <strong style="color: #92400e; font-size: 14px;">Receipt Attached</strong><br>
+                            <span style="color: #92400e; font-size: 13px;">Your official receipt is attached to this email as a PDF file. Please save it for your records.</span>
                         </td>
                     </tr>
                 </table>
             </div>
 
-            <!-- CTA Button -->
-            <div style="text-align: center; margin: 20px 0;">
-                <a href="https://duespay.vercel.app/dashboard" style="background: #10b981; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-                    View Dashboard
-                </a>
-            </div>
-
             <!-- Important Notes -->
-            <div style="margin-top: 32px; padding: 20px; background: #f1f5f9; border-radius: 8px;">
-                <h4 style="margin: 0 0 12px 0; color: #1e293b; font-size: 16px;">Important Notes:</h4>
-                <ul style="margin: 0; padding-left: 20px; color: #64748b; line-height: 1.6;">
-                    <li style="margin-bottom: 4px;">Keep this receipt for your records</li>
-                    <li style="margin-bottom: 4px;">This serves as proof of payment</li>
-                    <li style="margin-bottom: 4px;">Contact the association if you have any questions</li>
+            <div style="margin-top: 24px; padding: 16px; background: #f1f5f9; border-radius: 8px;">
+                <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 14px;">Important Notes:</h4>
+                <ul style="margin: 0; padding-left: 16px; color: #64748b; line-height: 1.5; font-size: 13px;">
+                    <li style="margin-bottom: 2px;">Keep this receipt for your records</li>
+                    <li style="margin-bottom: 2px;">This serves as proof of payment</li>
+                    <li style="margin-bottom: 2px;">Contact the association if you have any questions</li>
                     <li>Original receipt can be downloaded from your dashboard</li>
                 </ul>
             </div>
 
-            <p style="margin-top: 24px; color: #64748b; line-height: 1.6;">
+            <!-- Contact Info with Phone Link -->
+            <p style="margin-top: 20px; color: #64748b; line-height: 1.6; font-size: 14px;">
                 If you have any questions about this payment or need assistance, 
-                please don't hesitate to contact <strong>{{ association_name }}</strong> directly.
+                please don't hesitate to contact 
+                {% if association_no %}
+                    <a href="tel:{{ association_no }}" style="color: #7C3AED; text-decoration: none; font-weight: 600;"><strong>{{ association_name }}</strong></a>
+                {% else %}
+                    <strong style="color: #7C3AED;">{{ association_name }}</strong>
+                {% endif %}
+                directly.
             </p>
         </div>
 
         <!-- Footer -->
-        <div style="background: #f8fafc; padding: 24px; text-align: center; color: #64748b; font-size: 14px; border-top: 1px solid #e2e8f0;">
+        <div style="background: #f8fafc; padding: 20px 16px; text-align: center; color: #64748b; font-size: 14px; border-top: 1px solid #e2e8f0;">
             <p style="margin: 0 0 8px 0;">
                 <strong style="color: #1e293b;">{{ association_name }}</strong>
             </p>
-            <p style="margin: 0; opacity: 0.8;">
+            <p style="margin: 0; opacity: 0.8; font-size: 12px;">
                 This email was automatically generated by DuesPay<br>
-                © {{ now|date:"Y" }} All rights reserved
+                © {{ now|date:"Y" }} All rights reserved. Contact us at 
+                <a href="mailto:chinonsoali2005@gmail.com">chinonsoali2005@gmail.com</a>
             </p>
         </div>
-    </div>
-
-    <!-- Mobile Responsive Fallback -->
-    <div style="display: none;">
-        <style>
-            @media (max-width: 600px) {
-                .mobile-stack {
-                    display: block !important;
-                    width: 100% !important;
-                }
-            }
-        </style>
     </div>
 </body>
 </html>
