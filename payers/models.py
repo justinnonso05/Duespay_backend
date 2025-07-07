@@ -1,5 +1,6 @@
 from django.db import models
 from association.models import Association
+import datetime
 
 class Payer(models.Model):
     association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='payers')
@@ -10,6 +11,7 @@ class Payer(models.Model):
     matric_number = models.CharField(max_length=50)
     faculty = models.CharField(max_length=100, blank=True, null=True)
     department = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [

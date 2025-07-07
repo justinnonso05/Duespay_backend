@@ -15,6 +15,7 @@ class Association(models.Model):
     association_name = models.CharField(max_length=255, unique=True, default="other")
     association_short_name = models.CharField(max_length=50, unique=True, default="other")
     Association_type = models.CharField(max_length=20, choices=ASS_CHOICES, default="Other")
+    theme_color = models.CharField(max_length=7, default="#9810fa")  # Default to white
     logo = CloudinaryField('image', folder="Duespay/logos", default="DuesPay/default.jpg", validators=[validate_file_type])
 
     def __str__(self):

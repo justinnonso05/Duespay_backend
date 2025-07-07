@@ -53,7 +53,7 @@ class PayerViewSet(viewsets.ModelViewSet):
         association = getattr(self.request.user, 'association', None)
         queryset = Payer.objects.none()
         if association:
-            queryset = Payer.objects.filter(association=association)
+            queryset = Payer.objects.filter(association=association).order_by('-created_at')
 
         # Search by name, matric number, email, faculty, department
         search = self.request.query_params.get('search')

@@ -3,3 +3,5 @@
 /media
 /DuesPay
 /.github
+/*.pdf
+/receipt_compact.py

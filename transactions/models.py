@@ -37,12 +37,49 @@ class Transaction(models.Model):
 # Transaction Receipt model
 class TransactionReceipt(models.Model):
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='receipt')
-    pdf_file = CloudinaryField('file', folder="DuesPay/transactionReceipts", validators=[validate_file_type])
-    receipt_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    receipt_no = models.CharField(max_length=10, editable=False)
     issued_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        # Remove the constraint that uses lookup syntax
+        pass
+
+    def save(self, *args, **kwargs):
+        if not self.receipt_no:
+            # Get the association from the related transaction
+            association = self.transaction.association
+            
+            # Get the highest receipt number for this association
+            last_receipt = TransactionReceipt.objects.filter(
+                transaction__association=association
+            ).order_by('-receipt_no').first()
+            
+            if last_receipt:
+                # Extract the numeric part and increment
+                last_number = int(last_receipt.receipt_no)
+                new_number = last_number + 1
+            else:
+                # First receipt for this association
+                new_number = 1
+            
+            # Format as 5-digit zero-padded string
+            self.receipt_no = f"{new_number:05d}"
+        
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        # Add validation to ensure uniqueness per association
+        if self.pk is None:  # Only for new instances
+            association = self.transaction.association
+            if TransactionReceipt.objects.filter(
+                transaction__association=association,
+                receipt_no=self.receipt_no
+            ).exists():
+                from django.core.exceptions import ValidationError
+                raise ValidationError("Receipt number already exists for this association")
+
     def __str__(self):
-        return f"Receipt {self.receipt_id} for {self.transaction}"
+        return f"Receipt {self.receipt_no} for {self.transaction.reference_id}"
     
     @property
     def pdf_file_url(self):

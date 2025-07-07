@@ -10,6 +10,6 @@ class TransactionAdmin(ModelAdmin):
 
 @admin.register(TransactionReceipt)
 class TransactionReceiptAdmin(ModelAdmin):
-    list_display = ("receipt_id", "transaction", "issued_at")
-    search_fields = ("receipt_id", "transaction__reference_id")
+    list_display = ("receipt_no", "transaction", "issued_at")
+    search_fields = ("receipt_no", "transaction__reference_id")
     list_filter = ("issued_at",)
