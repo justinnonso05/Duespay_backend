@@ -2,6 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from main.models import AdminUser
 from .models import Association
+from transactions.models import Transaction
 
 @receiver(post_save, sender=AdminUser)
 def create_association_for_user(sender, instance, created, **kwargs):
@@ -17,3 +18,11 @@ def create_association_for_user(sender, instance, created, **kwargs):
             association_name=f"{instance.first_name} {instance.last_name} Association",
             association_short_name=short_name,
         )
+
+@receiver(post_save, sender=Transaction)
+def create_notification_for_transaction(sender, instance, created, **kwargs):
+    if created:
+        association = instance.association
+        payer = f"{instance.payer.first_name} {instance.payer.last_name}"
+        message = f"New transaction of ₦{instance.amount_paid} from {payer}."
+        association.notifications.create(message=message)

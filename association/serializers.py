@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from payments.serializers import PaymentItemSerializer, ReceiverBankAccountSerializer
-from .models import Association
+from .models import Association, Notification
 
 class AssociationSerializer(serializers.ModelSerializer):
     bank_account = ReceiverBankAccountSerializer(read_only=True)
@@ -15,3 +15,9 @@ class AssociationSerializer(serializers.ModelSerializer):
         model = Association
         fields = "__all__"
         read_only_fields = ['admin', 'bank_account', 'payment_items', "logo_url"]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = "__all__"

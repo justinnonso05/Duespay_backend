@@ -24,3 +24,14 @@ class Association(models.Model):
     @property
     def logo_url(self):
         return self.logo.url if self.logo else ''
+
+
+class Notification(models.Model):
+    association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.association.association_short_name}: {self.message[:20]}"
+    

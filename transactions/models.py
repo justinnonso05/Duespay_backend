@@ -3,7 +3,6 @@ from payers.models import Payer
 from association.models import Association
 from payments.models import PaymentItem
 from .utils import generate_unique_reference_id
-import uuid
 from utils.utils import validate_file_type
 from cloudinary.models import CloudinaryField
 

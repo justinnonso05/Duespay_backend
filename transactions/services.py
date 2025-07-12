@@ -26,6 +26,8 @@ class VerificationService:
         self.amount_paid = amount_paid
         self.bank_account = bank_account
         self.payment_items = payment_items
+        self.phone_no = self.bank_account.association.admin.phone_number
+        self.email = self.bank_account.association.admin.email
         self.gemini_api_key = config('GEMINI_API_KEY')
         genai.configure(api_key=self.gemini_api_key)
         self.model = genai.GenerativeModel('gemini-2.0-flash')
@@ -84,8 +86,34 @@ class VerificationService:
 
     def verify_proof(self):
         text = self.extract_text_from_proof()
+        # text = "Hello world! This is a test proof document. The beneficiary name is Joh Doee and the amount paid is ₦2000. Transaction date is 2023-10-01."
+    
         if not text:
             return False, "Could not extract text from proof."
+
+        # 1. Check beneficiary name
+        admin_contact = self.phone_no or self.email
+        if self.bank_account.account_name.lower() not in text.lower():
+            return False, f"Invalid Beneficiary Name on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
+
+        # 2. Check amount
+        expected_amount_str = self.clean_amount(self.amount_paid)
+        amounts_in_text = self.extract_amounts_from_text(text)
+        if expected_amount_str not in amounts_in_text:
+            return False, f"Invalid Amount Paid on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
+
+        # 3. Check transaction date (optional, improve as needed)
+        # receipt_date_str = self.extract_date_from_text(text)
+        # if receipt_date_str:
+        #     from datetime import datetime
+        #     receipt_date = datetime.strptime(receipt_date_str, "%Y-%m-%d").date()
+        #     print(f"Receipt Date: {receipt_date}")
+        #     for item in self.payment_items:
+        #         if hasattr(item, 'created_at') and receipt_date < item.created_at.date():
+        #             return False, f"Invalid Transaction Date on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
+
+        # Add more checks as needed...
+
         return True, "Proof verified successfully."
 
 logger = logging.getLogger(__name__)

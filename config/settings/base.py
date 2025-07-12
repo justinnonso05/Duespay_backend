@@ -5,6 +5,8 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+
+# move this to env
 SECRET_KEY = 'django-insecure-4131hh(xs@!1d&b98l+si8yrmf!-u0g(@wv67u&^o27r3p4=r9'
 
 ALLOWED_HOSTS = ['*']
@@ -98,6 +100,7 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Dynamic dues payment platform',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'SHOW_WARNINGS': False,
     'SWAGGER_UI_SETTINGS': {
         'persistAuthorization': True,
     },
@@ -113,4 +116,4 @@ SIMPLE_JWT = {
 }
 
 
-OCR_SPACE_API_KEY = config('OCR_SPACE_API_KEY', default='helloworld')
+# OCR_SPACE_API_KEY = config('OCR_SPACE_API_KEY', default='helloworld')

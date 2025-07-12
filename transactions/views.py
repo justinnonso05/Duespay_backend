@@ -63,9 +63,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
         # Pending Payments (assuming is_verified=False means pending)
         pending_count = queryset.filter(is_verified=False).count()
 
-        percent_collections = "+12%" 
-        percent_completed = "+8%"    
-        percent_pending = "-2%"      
+        percent_collections = "-" 
+        percent_completed = "-"    
+        percent_pending = "-"      
 
         meta = {
             "total_collections": total_collections,
@@ -114,7 +114,7 @@ class ProofAndTransactionView(generics.GenericAPIView):
             bank_account = ReceiverBankAccount.objects.get(association=association)
         except ReceiverBankAccount.DoesNotExist:
             return Response({"error": "Bank account not found for association."}, status=status.HTTP_404_NOT_FOUND)
-
+        
         # Verification
         verifier = VerificationService(proof_file, amount_paid, payment_items, bank_account)
         verified, message = verifier.verify_proof()
