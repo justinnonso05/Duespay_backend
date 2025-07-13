@@ -512,6 +512,82 @@ class ReceiptService:
 
     @staticmethod
     def hex_to_rgb(hex_color):
-        """Convert hex color to RGB tuple"""
+        """Convert hex color or named color to RGB tuple"""
+        # Handle named colors
+        named_colors = {
+            'red': '#FF0000', 'green': '#00FF00', 'blue': '#0000FF', 'cyan': '#00FFFF',
+            'magenta': '#FF00FF', 'yellow': '#FFFF00', 'black': '#000000', 'white': '#FFFFFF',
+            'gray': '#808080', 'grey': '#808080', 'orange': '#FFA500', 'purple': '#800080',
+            'pink': '#FFC0CB', 'brown': '#A52A2A', 'lime': '#00FF00', 'navy': '#000080',
+            'olive': '#808000', 'teal': '#008080', 'silver': '#C0C0C0', 'maroon': '#800000',
+            'fuchsia': '#FF00FF', 'aqua': '#00FFFF', 'indigo': '#4B0082', 'violet': '#8A2BE2',
+            'gold': '#FFD700', 'coral': '#FF7F50', 'salmon': '#FA8072', 'khaki': '#F0E68C',
+            'crimson': '#DC143C', 'azure': '#F0FFFF', 'beige': '#F5F5DC', 'bisque': '#FFE4C4',
+            'chocolate': '#D2691E', 'darkblue': '#00008B', 'darkgreen': '#006400', 'darkred': '#8B0000',
+            'darkcyan': '#008B8B', 'darkmagenta': '#8B008B', 'darkorange': '#FF8C00', 'darkviolet': '#9400D3',
+            'lightblue': '#ADD8E6', 'lightgreen': '#90EE90', 'lightgray': '#D3D3D3', 'lightgrey': '#D3D3D3',
+            'lightcoral': '#F08080', 'lightyellow': '#FFFFE0', 'lightpink': '#FFB6C1', 'lightsalmon': '#FFA07A',
+            'lightseagreen': '#20B2AA', 'lightsteelblue': '#B0C4DE', 'mediumblue': '#0000CD', 'mediumgreen': '#00FA9A',
+            'mediumorchid': '#BA55D3', 'mediumpurple': '#9370DB', 'mediumseagreen': '#3CB371', 'mediumslateblue': '#7B68EE',
+            'mediumturquoise': '#48D1CC', 'mediumvioletred': '#C71585', 'royalblue': '#4169E1', 'steelblue': '#4682B4',
+            'tomato': '#FF6347', 'turquoise': '#40E0D0', 'wheat': '#F5DEB3', 'forestgreen': '#228B22',
+            'seagreen': '#2E8B57', 'springgreen': '#00FF7F', 'lawngreen': '#7CFC00', 'chartreuse': '#7FFF00',
+            'greenyellow': '#ADFF2F', 'yellowgreen': '#9ACD32', 'olivedrab': '#6B8E23', 'darkolivegreen': '#556B2F',
+            'darkseagreen': '#8FBC8F', 'palegreen': '#98FB98', 'lightcyan': '#E0FFFF', 'paleturquoise': '#AFEEEE',
+            'powderblue': '#B0E0E6', 'skyblue': '#87CEEB', 'lightskyblue': '#87CEFA', 'deepskyblue': '#00BFFF',
+            'dodgerblue': '#1E90FF', 'cornflowerblue': '#6495ED', 'cadetblue': '#5F9EA0', 'darkturquoise': '#00CED1',
+            'darkslateblue': '#483D8B', 'darkslategray': '#2F4F4F', 'darkslategrey': '#2F4F4F', 'slateblue': '#6A5ACD',
+            'slategray': '#708090', 'slategrey': '#708090', 'lightslategray': '#778899', 'lightslategrey': '#778899',
+            'aliceblue': '#F0F8FF', 'antiquewhite': '#FAEBD7', 'aquamarine': '#7FFFD4', 'blanchedalmond': '#FFEBCD',
+            'blueviolet': '#8A2BE2', 'burlywood': '#DEB887', 'cornsilk': '#FFF8DC', 'darkgoldenrod': '#B8860B',
+            'darkgray': '#A9A9A9', 'darkgrey': '#A9A9A9', 'darkkhaki': '#BDB76B', 'darkorchid': '#9932CC',
+            'darksalmon': '#E9967A', 'deeppink': '#FF1493', 'dimgray': '#696969', 'dimgrey': '#696969',
+            'firebrick': '#B22222', 'floralwhite': '#FFFAF0', 'gainsboro': '#DCDCDC', 'ghostwhite': '#F8F8FF',
+            'goldenrod': '#DAA520', 'honeydew': '#F0FFF0', 'hotpink': '#FF69B4', 'indianred': '#CD5C5C',
+            'ivory': '#FFFFF0', 'lavender': '#E6E6FA', 'lavenderblush': '#FFF0F5', 'lemonchiffon': '#FFFACD',
+            'lightgoldenrodyellow': '#FAFAD2', 'limegreen': '#32CD32', 'linen': '#FAF0E6', 'midnightblue': '#191970',
+            'mintcream': '#F5FFFA', 'mistyrose': '#FFE4E1', 'moccasin': '#FFE4B5', 'navajowhite': '#FFDEAD',
+            'oldlace': '#FDF5E6', 'orangered': '#FF4500', 'orchid': '#DA70D6', 'palegoldenrod': '#EEE8AA',
+            'palevioletred': '#DB7093', 'papayawhip': '#FFEFD5', 'peachpuff': '#FFDAB9', 'peru': '#CD853F',
+            'plum': '#DDA0DD', 'rosybrown': '#BC8F8F', 'saddlebrown': '#8B4513', 'sandybrown': '#F4A460',
+            'seashell': '#FFF5EE', 'sienna': '#A0522D', 'snow': '#FFFAFA', 'tan': '#D2B48C',
+            'thistle': '#D8BFD8', 'whitesmoke': '#F5F5F5',
+        }
+        
+        # Convert to lowercase for case-insensitive matching
+        color_lower = str(hex_color).lower().strip()
+        
+        # Check if it's a named color
+        if color_lower in named_colors:
+            hex_color = named_colors[color_lower]
+        else:
+            hex_color = str(hex_color)
+        
+        # Ensure hex color starts with #
+        if not hex_color.startswith('#'):
+            hex_color = '#' + hex_color
+        
+        # Remove # and validate length
         hex_color = hex_color.lstrip('#')
-        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        
+        # Handle 3-digit hex codes (e.g., #FFF -> #FFFFFF)
+        if len(hex_color) == 3:
+            hex_color = ''.join([c*2 for c in hex_color])
+        
+        # Validate hex color format
+        if len(hex_color) != 6:
+            logger.warning(f"Invalid color format: {hex_color}, using default purple")
+            hex_color = '7C3AED'  # Default purple color
+        
+        # Validate hex characters
+        try:
+            int(hex_color, 16)
+        except ValueError:
+            logger.warning(f"Invalid hex color: {hex_color}, using default purple")
+            hex_color = '7C3AED'  # Default purple color
+        
+        try:
+            return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        except ValueError:
+            logger.warning(f"Failed to parse color: {hex_color}, using default purple")
+            return (124, 58, 237)  # Default purple RGB
