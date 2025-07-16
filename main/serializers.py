@@ -1,6 +1,17 @@
 from rest_framework import serializers
 from .models import AdminUser
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+import re
+
+def check_password(value):
+    if len(value) < 6:
+        raise serializers.ValidationError("Password must be at least 6 characters long.")
+    
+    if not re.search(r'[A-Z]', value):
+        raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+    
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
+        raise serializers.ValidationError("Password must contain at least one special character.")
 
 class AdminUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6, required=False)
@@ -56,6 +67,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = AdminUser
         fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'password']
 
+    def validate_password(self, value):
+        check_password(value)
+        return value
+
     def create(self, validated_data):
         user = AdminUser.objects.create_user(
             username=validated_data['username'],
@@ -65,3 +80,15 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    uid = serializers.IntegerField()  # Add uid to serializer
+    password = serializers.CharField(min_length=6)
+
+    def validate_password(self, value):
+        check_password(value)
+        return value

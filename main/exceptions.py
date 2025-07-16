@@ -27,8 +27,31 @@ def custom_exception_handler(exc, context):
                 # If only one error, put it in message
                 if len(custom_response_data['errors']) == 1:
                     field_name = list(custom_response_data['errors'].keys())[0]
-                    custom_response_data['message'] = custom_response_data['errors'][field_name]
+                    error_message = custom_response_data['errors'][field_name]
+                    custom_response_data['message'] = error_message
             
             return Response(custom_response_data, status=response.status_code)
+        
+        # Handle other status codes if needed
+        elif response.status_code == 401:
+            return Response({
+                'success': False,
+                'message': 'Authentication required',
+                'errors': {}
+            }, status=response.status_code)
+        
+        elif response.status_code == 403:
+            return Response({
+                'success': False,
+                'message': 'You do not have permission to perform this action',
+                'errors': {}
+            }, status=response.status_code)
+        
+        elif response.status_code == 404:
+            return Response({
+                'success': False,
+                'message': 'Resource not found',
+                'errors': {}
+            }, status=response.status_code)
     
     return response
