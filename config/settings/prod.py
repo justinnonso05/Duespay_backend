@@ -42,7 +42,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 ALLOWED_HOSTS = [
-    'duespay.pythonanywhere.com'
+    'duespay.pythonanywhere.com',
     'duespay.onrender.com',
     # add host production server here
 ]
