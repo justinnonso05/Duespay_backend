@@ -10,6 +10,8 @@ INSTALLED_APPS += ['cloudinary', 'cloudinary_storage']
 
 CORS_ALLOWED_ORIGINS = [
     'https://duespay.vercel.app',
+    'duespay.app',
+    'www.duespay.app',
 ]
 
 # DATABASES = {
@@ -40,7 +42,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 ALLOWED_HOSTS = [
-    'https://duespay.vercel.app',
+    'duespay.pythonanywhere.com'
     'duespay.onrender.com',
     # add host production server here
 ]

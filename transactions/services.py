@@ -76,7 +76,12 @@ class VerificationService:
         text = text.replace('O', '0').replace('o', '0')
         text = re.sub(r'[₦N]', '', text)
         numbers = re.findall(r'\d[\d,\.]*', text)
-        cleaned = [self.clean_amount(n.replace(',', '')) for n in numbers]
+        cleaned = []
+        for n in numbers:
+            n_clean = n.replace(',', '')
+            # Only keep numbers with at most one decimal point
+            if n_clean.count('.') <= 1 and re.match(r'^\d+(\.\d+)?$', n_clean):
+                cleaned.append(self.clean_amount(n_clean))
         return cleaned
 
     def extract_date_from_text(self, text):
@@ -91,8 +96,8 @@ class VerificationService:
         if not text:
             return False, "Could not extract text from proof."
 
-        # 1. Check beneficiary name
         admin_contact = self.phone_no or self.email
+        # 1. Check beneficiary name
         if self.bank_account.account_name.lower() not in text.lower():
             return False, f"Invalid Beneficiary Name on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
 
@@ -112,7 +117,7 @@ class VerificationService:
         #         if hasattr(item, 'created_at') and receipt_date < item.created_at.date():
         #             return False, f"Invalid Transaction Date on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
 
-        # Add more checks as needed...
+        # Add more checks as needed... beneficiary account number
 
         return True, "Proof verified successfully."
 

@@ -8,15 +8,9 @@ from .models import AdminUser
 from .serializers import  RegisterSerializer
 
 def base_redirect_view(request):
-    """
-    Redirects to the admin page.
-    """
     return redirect('/admin/')  
 
 def ping_view(request):
-    """
-    A simple view to check if the server is running.
-    """
     print("Server is running")
     return HttpResponse("Pong", status=200)  
 
@@ -30,14 +24,11 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             return user.payer
         return user  
 
-
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
-
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
     queryset = AdminUser.objects.all()
  
-

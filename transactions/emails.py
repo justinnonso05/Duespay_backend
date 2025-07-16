@@ -34,7 +34,7 @@ def send_receipt_email(receipt, pdf_content):
     transaction = receipt.transaction
     association = transaction.association
     current_year_short = str(datetime.now().year)[-2:]
-    receipt_no = f"{association.association_short_name}/{receipt.receipt_no}/{current_year_short}"
+    receipt_no = f"{association.association_short_name.upper()}/{receipt.receipt_no}/{current_year_short}"
 
     subject = f"Payment Receipt #{receipt_no} - {association.association_name}"
 
@@ -42,6 +42,7 @@ def send_receipt_email(receipt, pdf_content):
         'payer_name': f"{transaction.payer.first_name} {transaction.payer.last_name}",
         'receipt_no': receipt_no,
         'transaction_ref': transaction.reference_id,
+        'transaction_date': transaction.submitted_at.strftime('%Y-%m-%d %H:%M:%S'),
         'association_name': association.association_name,
         'association_logo': association.logo.url if association.logo else '',
         'association_no': association.admin.phone_number,
