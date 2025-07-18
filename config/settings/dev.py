@@ -8,6 +8,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
 ]
 
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http:\/\/([a-zA-Z0-9-]+)\.localhost:5173$",
+]
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

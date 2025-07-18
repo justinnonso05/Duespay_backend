@@ -12,6 +12,7 @@ CORS_ALLOWED_ORIGINS = [
     'https://duespay.vercel.app',
     'https://duespay.app',
     'https://www.duespay.app',
+    'http://localhost:5173',
 ]
 
 # DATABASES = {
