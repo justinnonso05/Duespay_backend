@@ -504,7 +504,7 @@ class ReceiptService:
             
             if pdf_content:
                 # Send receipt email
-                send_receipt_email(receipt, pdf_content)
+                send_receipt_email(receipt)
                 print(f"✅ Receipt sent successfully for {receipt.receipt_no}")
                 return True
             else:

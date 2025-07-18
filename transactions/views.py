@@ -4,11 +4,12 @@ from rest_framework.response import Response
 from django.db import models
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .services import VerificationService
-from .models import Transaction
+from .models import Transaction, TransactionReceipt
 from association.models import Association
 from payers.services import PayerService
 from payments.models import PaymentItem, ReceiverBankAccount
-from .serializers import TransactionSerializer, ProofAndTransactionSerializer
+from .serializers import TransactionSerializer, ProofAndTransactionSerializer, TransactionReceiptDetailSerializer
+from rest_framework.generics import RetrieveAPIView
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
@@ -163,4 +164,12 @@ class ProofAndTransactionView(generics.GenericAPIView):
             'reference_id': transaction.reference_id,
             'items_paid': items_paid,
         }, status=201)
-    
+
+class TransactionReceiptDetailView(RetrieveAPIView):
+    queryset = TransactionReceipt.objects.select_related(
+        'transaction__payer', 'transaction__association'
+    ).prefetch_related('transaction__payment_items')
+    serializer_class = TransactionReceiptDetailSerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'receipt_no'
+

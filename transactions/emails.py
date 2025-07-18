@@ -29,7 +29,7 @@ def send_admin_new_transaction_email(admin, association, transaction):
     email.attach_alternative(html_content, "text/html")
     email.send(fail_silently=False)
 
-def send_receipt_email(receipt, pdf_content):
+def send_receipt_email(receipt):
     """Email: Send receipt with PDF attachment to payer"""
     transaction = receipt.transaction
     association = transaction.association
@@ -47,7 +47,7 @@ def send_receipt_email(receipt, pdf_content):
         'association_logo': association.logo.url if association.logo else '',
         'association_no': association.admin.phone_number,
         'amount_paid': transaction.amount_paid,
-        'theme_color': association.theme_color,
+        'transaction_receipt_url': f"{settings.FRONTEND_URL}/transactions/receipt/{transaction.reference_id}/",
     }
     
     message = render_to_string('transactions/receipt_template.html', context)
@@ -59,12 +59,6 @@ def send_receipt_email(receipt, pdf_content):
         to=[transaction.payer.email],
     )
     
-    # Attach PDF
-    email.attach(
-        f'receipt_{association.association_short_name}_{receipt.receipt_no}.pdf',
-        pdf_content,
-        'application/pdf'
-    )
     
     email.content_subtype = 'html'
     email.send(fail_silently=False)

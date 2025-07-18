@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Transaction
+from .models import TransactionReceipt, Transaction
 
 class TransactionSerializer(serializers.ModelSerializer):
     payment_item_titles = serializers.SerializerMethodField()
@@ -29,4 +29,35 @@ class ProofAndTransactionSerializer(serializers.Serializer):
     payer = serializers.JSONField()
     payment_item_ids = serializers.ListField(child=serializers.IntegerField(), allow_empty=False)
     amount_paid = serializers.DecimalField(max_digits=10, decimal_places=2)
-    proof_file = serializers.FileField()  
+    proof_file = serializers.FileField()
+
+class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
+    transaction_reference_id = serializers.CharField(source='transaction.reference_id')
+    payer_first_name = serializers.CharField(source='transaction.payer.first_name')
+    payer_last_name = serializers.CharField(source='transaction.payer.last_name')
+    amount_paid = serializers.DecimalField(source='transaction.amount_paid', max_digits=10, decimal_places=2)
+    items_paid = serializers.SerializerMethodField()
+    issued_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    association_name = serializers.CharField(source='transaction.association.name')
+    association_short_name = serializers.CharField(source='transaction.association.association_short_name')
+    association_logo = serializers.ImageField(source='transaction.association.logo')
+    association_theme_color = serializers.CharField(source='transaction.association.theme_color')
+
+    class Meta:
+        model = TransactionReceipt
+        fields = [
+            'receipt_no',
+            'issued_at',
+            'transaction_reference_id',
+            'payer_first_name',
+            'payer_last_name',
+            'amount_paid',
+            'items_paid',
+            'association_name',
+            'association_short_name',
+            'association_logo',
+            'association_theme_color',
+        ]
+
+    def get_items_paid(self, obj):
+        return [item.title for item in obj.transaction.payment_items.all()]
