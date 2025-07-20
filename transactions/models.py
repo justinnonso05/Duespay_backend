@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from payers.models import Payer
 from association.models import Association
@@ -36,6 +37,7 @@ class Transaction(models.Model):
 # Transaction Receipt model
 class TransactionReceipt(models.Model):
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='receipt')
+    receipt_id = models.CharField(default=uuid.uuid4, unique=True, editable=False, max_length=36)
     receipt_no = models.CharField(max_length=10, editable=False)
     issued_at = models.DateTimeField(auto_now_add=True)
 

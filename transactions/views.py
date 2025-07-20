@@ -171,5 +171,5 @@ class TransactionReceiptDetailView(RetrieveAPIView):
     ).prefetch_related('transaction__payment_items')
     serializer_class = TransactionReceiptDetailSerializer
     permission_classes = [AllowAny]
-    lookup_field = 'receipt_no'
+    lookup_field = 'receipt_id'
 

@@ -45,10 +45,12 @@ class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
     association_logo = serializers.ImageField(source='transaction.association.logo')
     association_theme_color = serializers.CharField(source='transaction.association.theme_color')
     receipt_no = serializers.SerializerMethodField()
+    receipt_id = serializers.CharField(read_only=True) 
 
     class Meta:
         model = TransactionReceipt
         fields = [
+            'receipt_id',
             'receipt_no',
             'issued_at',
             'transaction_reference_id',
