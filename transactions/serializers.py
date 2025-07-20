@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+import association
 from .models import TransactionReceipt, Transaction
 
 class TransactionSerializer(serializers.ModelSerializer):
@@ -42,6 +44,7 @@ class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
     association_short_name = serializers.CharField(source='transaction.association.association_short_name')
     association_logo = serializers.ImageField(source='transaction.association.logo')
     association_theme_color = serializers.CharField(source='transaction.association.theme_color')
+    receipt_no = serializers.SerializerMethodField()
 
     class Meta:
         model = TransactionReceipt
@@ -58,6 +61,14 @@ class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
             'association_logo',
             'association_theme_color',
         ]
+
+        receipt_no = serializers.SerializerMethodField()
+
+    def get_receipt_no(self, obj):
+        association_short = obj.transaction.association.association_short_name.upper()
+        receipt_no = obj.receipt_no
+        current_year_short = obj.issued_at.strftime('%y')
+        return f"{association_short}/{receipt_no}/{current_year_short}"
 
     def get_items_paid(self, obj):
         return [item.title for item in obj.transaction.payment_items.all()]
