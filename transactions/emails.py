@@ -47,7 +47,7 @@ def send_receipt_email(receipt):
         'association_logo': association.logo.url if association.logo else '',
         'association_no': association.admin.phone_number,
         'amount_paid': transaction.amount_paid,
-        'transaction_receipt_url': f"{settings.FRONTEND_URL}/transactions/receipt/{transaction.reference_id}/",
+        'transaction_receipt_url': f"{settings.FRONTEND_URL}/transactions/receipt/{receipt.receipt_no}/",
     }
     
     message = render_to_string('transactions/receipt_template.html', context)

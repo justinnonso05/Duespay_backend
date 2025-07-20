@@ -1,5 +1,5 @@
 from transactions.services import ReceiptService
-from .emails import send_admin_new_transaction_email
+from .emails import send_admin_new_transaction_email, send_receipt_email
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Transaction, TransactionReceipt
@@ -24,7 +24,7 @@ def create_receipt_on_verification(sender, instance, created, **kwargs):
             )
             
             # Always generate and send receipt (whether new or existing)
-            ReceiptService.process_verified_transaction(receipt)
+            send_receipt_email(receipt)
             
             if receipt_created:
                 print(f"✅ New receipt created and sent for transaction {instance.reference_id}")

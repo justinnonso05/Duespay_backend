@@ -38,7 +38,7 @@ class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
     amount_paid = serializers.DecimalField(source='transaction.amount_paid', max_digits=10, decimal_places=2)
     items_paid = serializers.SerializerMethodField()
     issued_at = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
-    association_name = serializers.CharField(source='transaction.association.name')
+    association_name = serializers.CharField(source='transaction.association.association_name')
     association_short_name = serializers.CharField(source='transaction.association.association_short_name')
     association_logo = serializers.ImageField(source='transaction.association.logo')
     association_theme_color = serializers.CharField(source='transaction.association.theme_color')
