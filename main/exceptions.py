@@ -1,6 +1,7 @@
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
 
 def custom_exception_handler(exc, context):
     """
@@ -34,11 +35,25 @@ def custom_exception_handler(exc, context):
         
         # Handle other status codes if needed
         elif response.status_code == 401:
-            return Response({
-                'success': False,
-                'message': 'Authentication required',
-                'errors': {}
-            }, status=response.status_code)
+            # Differentiate between invalid credentials and not authenticated
+            if isinstance(exc, AuthenticationFailed):
+                return Response({
+                    'success': False,
+                    'message': str(exc) or 'Invalid credentials',
+                    'errors': {}
+                }, status=response.status_code)
+            elif isinstance(exc, NotAuthenticated):
+                return Response({
+                    'success': False,
+                    'message': 'Authentication required',
+                    'errors': {}
+                }, status=response.status_code)
+            else:
+                return Response({
+                    'success': False,
+                    'message': 'Unauthorized',
+                    'errors': {}
+                }, status=response.status_code)
         
         elif response.status_code == 403:
             return Response({
