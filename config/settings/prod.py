@@ -20,18 +20,6 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https:\/\/([a-zA-Z0-9-]+)\.duespay.app$",
 ]
 
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': config('DB_NAME'),
-#         'USER': config('DB_USER'),
-#         'PASSWORD': config('DB_PASSWORD'),
-#         'HOST': config('DB_HOST'),
-#         'PORT': config('DB_PORT', default='5432'),
-#     }
-# }
-
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL'),
@@ -51,7 +39,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 ALLOWED_HOSTS = [
     'duespay.pythonanywhere.com',
     'duespay.onrender.com',
-    # add host production server here
 ]
 
 
