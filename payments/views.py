@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import PaymentItem, ReceiverBankAccount
 from .serializers import PaymentItemSerializer, ReceiverBankAccountSerializer
+from association.models import Session
+from rest_framework.exceptions import ValidationError
 
 class PaymentItemViewSet(viewsets.ModelViewSet):
     queryset = PaymentItem.objects.all()
@@ -10,14 +12,41 @@ class PaymentItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        association = self.request.user.association
-        serializer.save(association=association)
+        association = getattr(self.request.user, 'association', None)
+        if not association or not association.current_session:
+            raise ValidationError("No current session available. Please create a session first.")
+        
+        serializer.save(
+            association=association,
+            session=association.current_session  # Auto-assign current session
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['association'] = getattr(self.request.user, 'association', None)
+        return context
 
     def get_queryset(self):
         association = getattr(self.request.user, 'association', None)
         queryset = PaymentItem.objects.none()
+        
         if association:
-            queryset = PaymentItem.objects.filter(association=association)
+            # Get session_id from query params or use current session
+            session_id = self.request.query_params.get('session_id')
+            
+            if session_id:
+                # Validate that session belongs to this association
+                try:
+                    session = Session.objects.get(id=session_id, association=association)
+                    queryset = PaymentItem.objects.filter(session=session)
+                except Session.DoesNotExist:
+                    queryset = PaymentItem.objects.none()
+            elif association.current_session:
+                # Use current session if no session_id provided
+                queryset = PaymentItem.objects.filter(session=association.current_session)
+            else:
+                # No session available, return empty queryset
+                queryset = PaymentItem.objects.none()
 
         # Search by title
         search = self.request.query_params.get('search')

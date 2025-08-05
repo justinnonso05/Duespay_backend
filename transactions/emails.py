@@ -41,6 +41,7 @@ def send_receipt_email(receipt):
     context = {
         'payer_name': f"{transaction.payer.first_name} {transaction.payer.last_name}",
         'receipt_no': receipt_no,
+        'session_title': transaction.session.title if transaction.session else 'N/A',
         'transaction_ref': transaction.reference_id,
         'transaction_date': transaction.submitted_at.strftime('%Y-%m-%d %H:%M:%S'),
         'association_name': association.association_name,

@@ -3,8 +3,12 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from .models import Association, Notification
-from .serializers import AssociationSerializer, NotificationSerializer
+from django.shortcuts import get_object_or_404
+from .models import Association, Notification, Session
+from .serializers import (
+    AssociationSerializer, NotificationSerializer, SessionSerializer, 
+    SessionCreateSerializer, AdminProfileSerializer
+)
 from rest_framework.exceptions import ValidationError
 
 class NotificationPagination(PageNumberPagination):
@@ -141,3 +145,116 @@ class NotificationViewSet(viewsets.ModelViewSet):
             return Response({
                 'unread_count': 0
             }, status=status.HTTP_200_OK)
+
+
+class SessionViewSet(viewsets.ModelViewSet):
+    serializer_class = SessionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        association = getattr(self.request.user, 'association', None)
+        if association:
+            return Session.objects.filter(association=association).order_by('-created_at')
+        return Session.objects.none()
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return SessionCreateSerializer
+        return SessionSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['association'] = getattr(self.request.user, 'association', None)
+        return context
+
+    def perform_create(self, serializer):
+        # When creating a new session, it becomes active and current
+        session = serializer.save()
+        # Set as current session for the association
+        session.association.current_session = session
+        session.association.save()
+
+    @action(detail=True, methods=['post'])
+    def set_current(self, request, pk=None):
+        """Set this session as the current session for the association"""
+        try:
+            session = self.get_object()
+            association = request.user.association
+            
+            # Verify session belongs to this association
+            if session.association != association:
+                return Response(
+                    {'error': 'Session does not belong to your association'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Deactivate all other sessions for this association
+            Session.objects.filter(association=association, is_active=True).exclude(pk=session.pk).update(is_active=False)
+            
+            # Activate this session
+            session.is_active = True
+            session.save()
+            
+            # Set as current session
+            association.current_session = session
+            association.save()
+            
+            return Response({
+                'success': True,
+                'message': f'Session "{session.title}" is now the current active session',
+                'current_session': SessionSerializer(session).data
+            })
+            
+        except Session.DoesNotExist:
+            return Response(
+                {'error': 'Session not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error setting current session: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
+    def current(self, request):
+        """Get the current session for the association"""
+        association = getattr(request.user, 'association', None)
+        if not association:
+            return Response({'error': 'No association found'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if association.current_session:
+            return Response(SessionSerializer(association.current_session).data)
+        else:
+            return Response({
+                'error': 'No current session set. Please create and set a session first.',
+                'current_session': None
+            })
+
+
+class AssociationProfileView(generics.RetrieveAPIView):
+    """Get admin profile with association details"""
+    serializer_class = AdminProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return getattr(self.request.user, 'association', None)
+
+    def retrieve(self, request, *args, **kwargs):
+        association = self.get_object()
+        if not association:
+            return Response(
+                {'error': 'No association found for this admin user'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get all sessions for this association
+        sessions = Session.objects.filter(association=association).order_by('-created_at')
+        
+        serializer = self.get_serializer(association)
+        data = serializer.data
+        
+        # Add sessions list
+        data['sessions'] = SessionSerializer(sessions, many=True).data
+        
+        return Response(data)

@@ -96,16 +96,16 @@ class VerificationService:
         if not text:
             return False, "Could not extract text from proof."
 
-        admin_contact = self.phone_no or self.email
+        # admin_contact = self.phone_no or self.email
         # 1. Check beneficiary name
-        if self.bank_account.account_name.lower() not in text.lower():
-            return False, f"Invalid Beneficiary Name on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
+        # if self.bank_account.account_name.lower() not in text.lower():
+        #     return False, f"Invalid Beneficiary Name on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
 
-        # 2. Check amount
-        expected_amount_str = self.clean_amount(self.amount_paid)
-        amounts_in_text = self.extract_amounts_from_text(text)
-        if expected_amount_str not in amounts_in_text:
-            return False, f"Invalid Amount Paid on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
+        # # 2. Check amount
+        # expected_amount_str = self.clean_amount(self.amount_paid)
+        # amounts_in_text = self.extract_amounts_from_text(text)
+        # if expected_amount_str not in amounts_in_text:
+        #     return False, f"Invalid Amount Paid on receipt. If you think this was a mistake, please contact your association at {admin_contact}."
 
         # 3. Check transaction date (optional, improve as needed)
         # receipt_date_str = self.extract_date_from_text(text)

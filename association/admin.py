@@ -1,6 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import Association, Notification
+from .models import Association, Notification, Session
 
 @admin.register(Association)
 class AssociationAdmin(ModelAdmin):
@@ -11,3 +11,13 @@ class AssociationAdmin(ModelAdmin):
 @admin.register(Notification)
 class NotificationAdmin(ModelAdmin):
     list_display = ("message", "is_read", "association__association_short_name")
+
+@admin.register(Session)
+class SessionAdmin(ModelAdmin):
+    list_display = ("title", "association", "start_date", "end_date", "is_active")
+    search_fields = ("title", "association__association_short_name")
+    list_filter = ("is_active", "association")
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('association')

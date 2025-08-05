@@ -1,9 +1,10 @@
 from django.db import models
-from association.models import Association
+from association.models import Association, Session
 import datetime
 
 class Payer(models.Model):
     association = models.ForeignKey(Association, on_delete=models.CASCADE, related_name='payers')
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='payers')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField()
@@ -15,7 +16,7 @@ class Payer(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['association', 'email'], name='unique_email_per_association'),
-            models.UniqueConstraint(fields=['association', 'phone_number'], name='unique_phone_per_association'),
-            models.UniqueConstraint(fields=['association', 'matric_number'], name='unique_matric_per_association'),
+            models.UniqueConstraint(fields=['session', 'email'], name='unique_email_per_session'),
+            models.UniqueConstraint(fields=['session', 'phone_number'], name='unique_phone_per_session'),
+            models.UniqueConstraint(fields=['session', 'matric_number'], name='unique_matric_per_session'),
         ]

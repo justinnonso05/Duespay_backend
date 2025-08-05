@@ -23,7 +23,19 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context['request'].user
-        validated_data['payer'] = user.payer
+        payer = user.payer
+        association = payer.association
+        validated_data['payer'] = payer
+        validated_data['association'] = association
+        
+        # Get session from validated data or use current session
+        session = validated_data.get('session')
+        if not session:
+            session = association.current_session
+            if not session:
+                raise serializers.ValidationError("No current session available. Please create a session first.")
+            validated_data['session'] = session
+            
         return super().create(validated_data)
 
 class ProofAndTransactionSerializer(serializers.Serializer):
@@ -46,12 +58,14 @@ class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
     association_theme_color = serializers.CharField(source='transaction.association.theme_color')
     receipt_no = serializers.SerializerMethodField()
     receipt_id = serializers.CharField(read_only=True) 
+    session_title = serializers.CharField(source='transaction.session.title', allow_null=True, default='N/A')
 
     class Meta:
         model = TransactionReceipt
         fields = [
             'receipt_id',
             'receipt_no',
+            'session_title',
             'issued_at',
             'transaction_reference_id',
             'payer_first_name',
@@ -63,8 +77,6 @@ class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
             'association_logo',
             'association_theme_color',
         ]
-
-        receipt_no = serializers.SerializerMethodField()
 
     def get_receipt_no(self, obj):
         association_short = obj.transaction.association.association_short_name.upper()

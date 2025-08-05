@@ -8,12 +8,12 @@ from .services import PayerService
 from .serializers import (
     PayerCheckSerializer, PayerSerializer, 
 )
-from association.models import Association
+from association.models import Association, Session
 from .models import Payer
+from rest_framework.exceptions import ValidationError
 
 class PayerCheckView(APIView):
-    permission_classes = [AllowAny]
-
+    
     def post(self, request):
         serializer = PayerCheckSerializer(data=request.data)
         if not serializer.is_valid():
@@ -26,8 +26,15 @@ class PayerCheckView(APIView):
         except Association.DoesNotExist:
             return Response({"error": "Association not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Check if association has a current session
+        if not association.current_session:
+            return Response({
+                "error": "Association has no active session. Please contact the association admin."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         payer, error = PayerService.check_or_update_payer(
             association,
+            association.current_session,  # Pass the session instance
             data['matric_number'],
             data['email'],
             data['phone_number'],
@@ -52,8 +59,27 @@ class PayerViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         association = getattr(self.request.user, 'association', None)
         queryset = Payer.objects.none()
+        
         if association:
-            queryset = Payer.objects.filter(association=association).order_by('-created_at')
+            # Get session_id from query params or use current session
+            session_id = self.request.query_params.get('session_id')
+            
+            if session_id:
+                # Validate that session belongs to this association
+                try:
+                    session = Session.objects.get(id=session_id, association=association)
+                    queryset = Payer.objects.filter(session=session)
+                except Session.DoesNotExist:
+                    queryset = Payer.objects.none()
+            elif association.current_session:
+                # Use current session if no session_id provided
+                queryset = Payer.objects.filter(session=association.current_session)
+            else:
+                # No session available, return empty queryset
+                queryset = Payer.objects.none()
+
+        # Order by creation date
+        queryset = queryset.order_by('-created_at')
 
         # Search by name, matric number, email, faculty, department
         search = self.request.query_params.get('search')
@@ -80,7 +106,14 @@ class PayerViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(association=self.request.user.association)
+        association = getattr(self.request.user, 'association', None)
+        if not association or not association.current_session:
+            raise ValidationError("No current session available. Please create a session first.")
+        
+        serializer.save(
+            association=association,
+            session=association.current_session  # Auto-assign current session
+        )
         
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())

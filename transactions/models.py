@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from payers.models import Payer
-from association.models import Association
+from association.models import Association, Session
 from payments.models import PaymentItem
 from .utils import generate_unique_reference_id
 from utils.utils import validate_file_type
@@ -16,6 +16,7 @@ class Transaction(models.Model):
     proof_of_payment = CloudinaryField('file', folder="Duespay/proofs", validators=[validate_file_type])
     is_verified = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='transactions')
     
     def save(self, *args, **kwargs):
         if not self.reference_id:
