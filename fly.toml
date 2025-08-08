@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for duespay-backend on 2025-07-01T12:23:01+01:00
+# fly.toml app configuration file generated for duespay-backend on 2025-08-07T18:14:57+01:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
 app = 'duespay-backend'
-primary_region = 'jnb'
+primary_region = 'fra'
 console_command = '/code/manage.py shell'
 
 [build]
