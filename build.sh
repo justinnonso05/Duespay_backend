@@ -6,4 +6,4 @@ python manage.py collectstatic --no-input
 
 python manage.py makemigrations
 python manage.py migrate
-python manage.py create_default_superuser
+python manage.py reset_db
