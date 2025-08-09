@@ -23,6 +23,18 @@ class AssociationSerializer(serializers.ModelSerializer):
     def validate_association_short_name(self, value):
         return value.lower()
 
+    def create(self, validated_data):
+        """Set the admin to the current user when creating"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            validated_data['admin'] = request.user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        """Don't allow changing the admin during updates"""
+        validated_data.pop('admin', None)
+        return super().update(instance, validated_data)
+
     class Meta:
         model = Association
         fields = "__all__"
