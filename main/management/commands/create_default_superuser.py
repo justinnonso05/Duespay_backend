@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         User = get_user_model()
-        if not User.objects.filter(username="admin").exists():
+        if not User.objects.filter(username="justondev").exists():
             User.objects.create_superuser("justondev", "justondev05@gmail.com", "nonso2005")
             self.stdout.write(">>>> Superuser created.")
         else:
