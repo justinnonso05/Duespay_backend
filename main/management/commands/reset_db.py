@@ -1,46 +1,87 @@
+import os
+from pathlib import Path
+
+from django.apps import apps
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
 from django.db import connection
 from django.conf import settings
 
 class Command(BaseCommand):
-    help = 'Reset database completely'
+    help = (
+        "Resets the database by deleting the DB file (SQLite) or dropping the "
+        "public schema (PostgreSQL), removing all migration files, and then "
+        "running migrate and creating a superuser."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--noinput',
-            action='store_true',
-            help='Do not prompt for input',
+            "--no-input",
+            "--noinput",
+            action="store_false",
+            dest="interactive",
+            help="Tells Django to NOT prompt the user for input of any kind.",
         )
 
     def handle(self, *args, **options):
-        self.stdout.write('Resetting database...')
-        
-        with connection.cursor() as cursor:
-            # Get all table names
-            cursor.execute("""
-                SELECT tablename FROM pg_tables 
-                WHERE schemaname = 'public'
-            """)
-            tables = [row[0] for row in cursor.fetchall()]
-            
-            if tables:
-                # Disable foreign key checks and drop all tables
-                for table in tables:
-                    cursor.execute(f'DROP TABLE IF EXISTS "{table}" CASCADE')
-                
-                self.stdout.write(f'Dropped {len(tables)} tables')
-            
-            # Reset sequences
-            cursor.execute("""
-                SELECT sequence_name FROM information_schema.sequences 
-                WHERE sequence_schema = 'public'
-            """)
-            sequences = [row[0] for row in cursor.fetchall()]
-            
-            for sequence in sequences:
-                cursor.execute(f'DROP SEQUENCE IF EXISTS "{sequence}" CASCADE')
-                
-            self.stdout.write(f'Dropped {len(sequences)} sequences')
+        interactive = options["interactive"]
+        db_vendor = connection.vendor
 
-        self.stdout.write(self.style.SUCCESS('Database reset complete'))
+        if interactive:
+            self.stdout.write(
+                self.style.WARNING(
+                    "\nThis command will completely WIPE the database and all migration files."
+                )
+            )
+            self.stdout.write(
+                self.style.WARNING(
+                    f"You are about to reset the '{db_vendor}' database defined in your settings."
+                )
+            )
+            confirm = input("Are you sure you want to continue? [y/N] ")
+            if confirm.lower() != "y":
+                self.stdout.write("Operation cancelled.")
+                return
+
+        self._reset_database(db_vendor)
+        self._delete_migrations()
+
+        self.stdout.write("\nCreating and applying new migrations...")
+        call_command("makemigrations")
+        call_command("migrate", database=connection.alias)
+
+        self.stdout.write("\nCreating default superuser...")
+        call_command("create_default_superuser")
+
+        self.stdout.write(
+            self.style.SUCCESS("\n✅ Database reset complete and superuser created.")
+        )
+
+    def _reset_database(self, db_vendor):
+        self.stdout.write(f"\nResetting '{db_vendor}' database...")
+        if db_vendor == "sqlite":
+            db_path = Path(settings.DATABASES["default"]["NAME"])
+            if db_path.exists():
+                db_path.unlink()
+                self.stdout.write(self.style.SUCCESS(f"  -> Deleted SQLite file: {db_path}"))
+        elif db_vendor == "postgresql":
+            with connection.cursor() as cursor:
+                self.stdout.write("  -> Dropping and recreating the 'public' schema...")
+                cursor.execute("DROP SCHEMA public CASCADE;")
+                cursor.execute("CREATE SCHEMA public;")
+                cursor.execute("GRANT ALL ON SCHEMA public TO public;")
+            self.stdout.write(self.style.SUCCESS("  -> PostgreSQL public schema wiped."))
+
+    def _delete_migrations(self):
+        self.stdout.write("\nDeleting old migration files...")
+        for app_config in apps.get_app_configs():
+            if str(settings.BASE_DIR) in app_config.path:
+                migrations_dir = Path(app_config.path) / "migrations"
+                if migrations_dir.exists():
+                    for file in migrations_dir.glob("*.py"):
+                        if file.name != "__init__.py":
+                            file.unlink()
+                            self.stdout.write(f"  -> Deleted {file.relative_to(settings.BASE_DIR)}")
+                    for file in migrations_dir.glob("*.pyc"):
+                        file.unlink()
+                        self.stdout.write(f"  -> Deleted {file.relative_to(settings.BASE_DIR)}")
