@@ -16,6 +16,12 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://duespay-backend.fly.dev",
+    "https://duespay.onrender.com",
+    "https://duespay.pythonanywhere.com",
+]
+
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https:\/\/([a-zA-Z0-9-]+)\.duespay.app$",
 ]
@@ -39,6 +45,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 ALLOWED_HOSTS = [
     'duespay.pythonanywhere.com',
     'duespay.onrender.com',
+    'duespay-backend.fly.dev'
 ]
 
 
