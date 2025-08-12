@@ -6,6 +6,10 @@ class ReceiverBankAccount(models.Model):
     bank_name = models.CharField(max_length=100)
     account_name = models.CharField(max_length=100)
     account_number = models.CharField(max_length=20)
+    bank_code = models.CharField(max_length=10, blank=True, null=True)  # Add this
+    is_verified = models.BooleanField(default=False)  # Add this
+    created_at = models.DateTimeField(auto_now_add=True)  # Add this
+    updated_at = models.DateTimeField(auto_now=True)  # Add this
 
     def __str__(self):
         return f"{self.account_name} - {self.bank_name}"

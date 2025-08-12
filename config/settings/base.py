@@ -116,6 +116,8 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+NUBAPI_TOKEN = config('NUBAPI_KEY', default='')
+
 
 
 # OCR_SPACE_API_KEY = config('OCR_SPACE_API_KEY', default='helloworld')
