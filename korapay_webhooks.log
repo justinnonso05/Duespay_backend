@@ -1,0 +1,109 @@
+Invalid webhook signature
+Webhook received: 
+Invalid JSON in webhook payload
+Korapay webhook signature invalid
+Korapay webhook: no Transaction for reference KPY-PAY-KOf8IC9uooaem5G
+Korapay webhook: no Transaction for reference KPY-PAY-w4cFBGxCkHMiSqY
+Korapay webhook signature invalid
+Korapay webhook: no Transaction for reference KPY-PAY-WWBoTxxTHG0lnBv
+Korapay init charge failed
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 177, in post
+    korapay_res = korapay_init_charge(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 61, in korapay_init_charge
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 422 Client Error: Unprocessable Entity for url: https://api.korapay.com/merchant/api/v1/charges/initialize
+Korapay init charge failed
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 178, in post
+    korapay_res = korapay_init_charge(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 84, in korapay_init_charge
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 422 Client Error: Unprocessable Entity for url: https://api.korapay.com/merchant/api/v1/charges/initialize
+Transaction TX-2047-450-RG verified via Korapay hosted checkout
+Korapay webhook: no Transaction for reference KPY-PAY-KOf8IC9uooaem5G
+Korapay webhook: no Transaction for reference KPY-PAY-w4cFBGxCkHMiSqY
+Transaction TX-9622-197-TV verified (matched_by=reference)
+Korapay init charge failed
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 201, in post
+    korapay_res = korapay_init_charge(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 75, in korapay_init_charge
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.korapay.com/merchant/api/v1/charges/initialize
+Korapay init charge failed
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 201, in post
+    korapay_res = korapay_init_charge(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 75, in korapay_init_charge
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.korapay.com/merchant/api/v1/charges/initialize
+Korapay init charge failed
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 201, in post
+    korapay_res = korapay_init_charge(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 75, in korapay_init_charge
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.korapay.com/merchant/api/v1/charges/initialize
+Korapay init charge failed
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 201, in post
+    korapay_res = korapay_init_charge(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 75, in korapay_init_charge
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.korapay.com/merchant/api/v1/charges/initialize
+Transaction TX-4495-769-VG verified via Korapay hosted checkout
+Korapay init charge failed
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 201, in post
+    korapay_res = korapay_init_charge(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 75, in korapay_init_charge
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.korapay.com/merchant/api/v1/charges/initialize
+Transaction TX-8078-205-CB verified via Korapay hosted checkout
+Transaction TX-8859-054-KZ verified via Korapay hosted checkout
+Transaction TX-2212-001-CD verified via Korapay hosted checkout
+Transaction TX-8920-812-QR verified via Korapay hosted checkout
+Transaction TX-9452-807-AI verified via Korapay hosted checkout
+Payout attempt failed for txn TX-9452-807-AI
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 298, in korapay_webhook
+    korapay_payout_bank(
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 138, in korapay_payout_bank
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://api.korapay.com/merchant/api/v1/payouts
+Transaction TX-1420-059-MW verified via Korapay hosted checkout
+Payout attempt failed for txn TX-1420-059-MW
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 298, in korapay_webhook
+    korapay_payout_bank(
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 138, in korapay_payout_bank
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 422 Client Error: Unprocessable Entity for url: https://api.korapay.com/merchant/api/v1/transactions/disburse
+Transaction TX-4180-036-AZ verified via Korapay hosted checkout
+Transaction TX-6325-341-SI verified via Korapay hosted checkout

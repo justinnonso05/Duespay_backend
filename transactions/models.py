@@ -13,7 +13,7 @@ class Transaction(models.Model):
     payment_items = models.ManyToManyField(PaymentItem)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     reference_id = models.CharField(default=generate_unique_reference_id, unique=True, editable=False, max_length=20)
-    proof_of_payment = CloudinaryField('file', folder="Duespay/proofs", validators=[validate_file_type])
+    proof_of_payment = CloudinaryField('file', folder="Duespay/proofs", validators=[validate_file_type], blank=True, null=True)  # made optional
     is_verified = models.BooleanField(default=False)
     submitted_at = models.DateTimeField(auto_now_add=True)
     session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name='transactions')

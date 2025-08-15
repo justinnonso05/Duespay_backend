@@ -57,18 +57,6 @@ class NubapiService:
         """Verify bank account details using Nubapi."""
         print(f"Verifying account: {account_number} with bank: {bank_code}")
         
-        # For testing purposes, return mock data for your test case
-        if account_number == "9046665617" and bank_code == "100004":
-            return {
-                "account_name": "JOHN DOE TEST",
-                "first_name": "JOHN",
-                "last_name": "DOE",
-                "other_name": "TEST",
-                "account_number": account_number,
-                "bank_code": bank_code,
-                "bank_name": "Test Bank",
-            }
-        
         api_url = f"{NubapiService.BASE_URL}/api/verify"
         params = {
             'account_number': account_number,

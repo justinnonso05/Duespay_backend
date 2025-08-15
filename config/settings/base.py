@@ -118,6 +118,34 @@ SIMPLE_JWT = {
 
 NUBAPI_TOKEN = config('NUBAPI_KEY', default='')
 
+KORAPAY_BASE_URL = 'https://api.korapay.com/merchant/api/v1'
 
+KORAPAY_SECRET_KEY = config('KORAPAY_SECRET_KEY', default='')
+KORAPAY_PUBLIC_KEY = config('KORAPAY_PUBLIC_KEY', default='')  
+KORAPAY_ENCRYPTION_KEY = config('KORAPAY_ENCRYPTION_KEY', default='')   
 
 # OCR_SPACE_API_KEY = config('OCR_SPACE_API_KEY', default='helloworld')
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'korapay_webhooks.log',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'main.views': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
