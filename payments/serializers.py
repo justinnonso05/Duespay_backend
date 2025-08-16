@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import PaymentItem, ReceiverBankAccount
-from .services import NubapiService
+from .services import VerifyBankService
 
 class PaymentItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,7 +28,7 @@ class ReceiverBankAccountSerializer(serializers.ModelSerializer):
 
     def validate_bank_code(self, value):
         # Validate that bank code exists in the bank list
-        banks = NubapiService.get_bank_list()
+        banks = VerifyBankService.get_bank_list()
         valid_codes = [bank.get('code') for bank in banks if bank.get('code')]
         
         if value not in valid_codes:
@@ -51,7 +51,7 @@ class BankAccountVerificationSerializer(serializers.Serializer):
     def validate_bank_code(self, value):
         try:
             # Validate against available banks
-            banks = NubapiService.get_bank_list()
+            banks = VerifyBankService.get_bank_list()
             if not banks:
                 # If we can't get bank list, allow the validation to pass
                 # and let the verification step handle it

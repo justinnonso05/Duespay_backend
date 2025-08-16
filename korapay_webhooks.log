@@ -107,3 +107,41 @@ Traceback (most recent call last):
 requests.exceptions.HTTPError: 422 Client Error: Unprocessable Entity for url: https://api.korapay.com/merchant/api/v1/transactions/disburse
 Transaction TX-4180-036-AZ verified via Korapay hosted checkout
 Transaction TX-6325-341-SI verified via Korapay hosted checkout
+Transaction TX-7676-205-FD verified via Korapay hosted checkout
+[INITIATE] ref=TX-9479-840-HX payer=1 assoc=1 items=[1] amount=3000.00 customer={'name': 'Justin Chinonso', 'email': 'chinonsoali2005@gmail.com'} redirect=http://localhost:5173/payment/callback
+[INITIATE][OK] ref=TX-9479-840-HX checkout_url=https://test-checkout.korapay.com/KPY-PI-202508160708PfLOVG58386/pay
+[WEBHOOK] event=charge.success data_keys=['reference', 'payment_reference', 'currency', 'amount', 'fee', 'payment_method', 'status']
+[WEBHOOK][VERIFIED] ref=TX-9479-840-HX amount=3000
+[PAYOUT][START] ref=TX-9479-840-HX-OUT bank=033 acct=0000000000 amount=3000 assoc_id=1
+[PAYOUT][END] ref=TX-9479-840-HX-OUT ok
+[WEBHOOK] event=transfer.success data_keys=['reference', 'currency', 'amount', 'fee', 'status']
+[INITIATE] ref=TX-8943-729-PF payer=7 assoc=1 items=[1, 2] amount=8000.00 customer={'name': 'Justin22 Chinonso2', 'email': 'jcmailer.1@gmail.com'} redirect=http://localhost:5173/payment/callback
+[INITIATE][OK] ref=TX-8943-729-PF checkout_url=https://test-checkout.korapay.com/KPY-PI-202508160724FSi1AD13244/pay
+[WEBHOOK] event=charge.success data_keys=['reference', 'payment_reference', 'currency', 'amount', 'fee', 'payment_method', 'status']
+[WEBHOOK][VERIFIED] ref=TX-8943-729-PF amount=8000
+[PAYOUT][START] ref=TX-8943-729-PF-OUT bank=033 acct=0000000000 amount=8000 assoc_id=1
+[PAYOUT][END] ref=TX-8943-729-PF-OUT ok
+[WEBHOOK] event=transfer.success data_keys=['reference', 'currency', 'amount', 'fee', 'status']
+[INITIATE] ref=TX-8626-500-SP base=3000.00 fee=100.00 charge=3100.00 customer={'name': 'Justin Chinonso', 'email': 'chinonsoali2005@gmail.com'} redirect=http://localhost:5173/payment/callback
+[INITIATE][OK] ref=TX-8626-500-SP checkout_url=https://test-checkout.korapay.com/KPY-PI-202508160740roqzN003499/pay
+[WEBHOOK] event=charge.success data_keys=['reference', 'payment_reference', 'currency', 'amount', 'fee', 'payment_method', 'status']
+[WEBHOOK][VERIFIED] ref=TX-8626-500-SP amount=3000.00
+[PAYOUT][START] ref=TX-8626-500-SP-OUT bank=033 acct=0000000000 amount=3000.00 assoc_id=1
+[PAYOUT][END] ref=TX-8626-500-SP-OUT ok
+[WEBHOOK] event=transfer.success data_keys=['reference', 'currency', 'amount', 'fee', 'status']
+[INITIATE] ref=TX-1754-267-HP base=150.00 fee=100.00 charge=250.00 customer={'name': 'Justin Chinonso', 'email': 'chinonsoali2005@gmail.com'} redirect=http://localhost:5173/payment/callback
+[INITIATE][OK] ref=TX-1754-267-HP checkout_url=https://checkout.korapay.com/KPY-PI-2025081610549FJl1v52966/pay
+[WEBHOOK] event=charge.success data_keys=['reference', 'payment_reference', 'currency', 'amount', 'fee', 'payment_method', 'status', 'virtual_bank_account_details', 'transaction_date']
+[WEBHOOK][VERIFIED] ref=TX-1754-267-HP amount=150.00
+[PAYOUT][START] ref=TX-1754-267-HP-OUT bank=090405 acct=9034049657 amount=150.00 assoc_id=1
+[PAYOUT][ERROR] ref=TX-1754-267-HP
+Traceback (most recent call last):
+  File "C:\Projects\DuesPay\Duespay_backend\main\views.py", line 342, in korapay_webhook
+    korapay_payout_bank(
+  File "C:\Projects\DuesPay\Duespay_backend\main\services.py", line 184, in korapay_payout_bank
+    resp.raise_for_status()
+  File "C:\Projects\DuesPay\Duespay_backend\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://api.korapay.com/merchant/api/v1/transactions/disburse
+[2025-08-16T11:41:32.056065+00:00][PAYOUT][REQ] ref=TX-1754-267-HP-OUT amount=150 bank=090405 acct=9034049657
+[2025-08-16T11:41:33.886947+00:00][PAYOUT][ERR] ref=TX-1754-267-HP-OUT status=409 resp={'status': False, 'error': 'conflict', 'message': 'You are not authorized for payout in NGN to bank_account via api', 'data': {'status': 'failed', 'message': 'You are not authorized for payout in NGN to bank_account via api', 'reference': 'TX-1754-267-HP-OUT'}}

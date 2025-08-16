@@ -147,5 +147,15 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'main.services': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'payments.services': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }

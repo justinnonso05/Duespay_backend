@@ -12,7 +12,7 @@ from .serializers import (
 from association.models import Session
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
-from .services import NubapiService
+from .services import VerifyBankService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -197,7 +197,7 @@ class BankListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        banks = NubapiService.get_bank_list()
+        banks = VerifyBankService.get_bank_list()
         if not banks:
             return Response(
                 {"error": "Could not retrieve bank list at the moment."}, 
@@ -244,10 +244,10 @@ class VerifyBankAccountView(APIView):
 
             # Verify with Nubapi
             try:
-                verification_data = NubapiService.verify_account(account_number, bank_code)
+                verification_data = VerifyBankService.verify_account(account_number, bank_code)
                 logger.info(f"Verification result: {verification_data}")
             except Exception as e:
-                logger.error(f"NubapiService error: {str(e)}")
+                logger.error(f"VerifyBankService error: {str(e)}")
                 return Response({
                     "success": False,
                     "message": "Bank verification service error",

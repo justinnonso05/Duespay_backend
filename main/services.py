@@ -4,11 +4,15 @@ import json
 import logging
 import requests
 import re
+from datetime import datetime, timezone as dt_tz
 from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
 
-KORAPAY_BASE_URL = "https://api.korapay.com/merchant/api/v1"
+KORAPAY_BASE_URL = getattr(settings, "KORAPAY_BASE_URL", "https://api.korapay.com/merchant/api/v1")
 logger = logging.getLogger(__name__)
+
+def _ts():
+    return datetime.now(dt_tz.utc).isoformat()
 
 def get_webhook_secret() -> str:
     return getattr(settings, 'KORAPAY_WEBHOOK_SECRET', None) or getattr(settings, 'KORAPAY_SECRET_KEY', '')
@@ -50,25 +54,37 @@ def _sanitize_customer_name(name: str) -> str:
 
 def _amount_number(amount: str | Decimal):
     d = Decimal(str(amount)).quantize(Decimal("0.01"))
-    # Send int if whole number, else float with 2dp
     return int(d) if d == d.to_integral() else float(d)
 
-def korapay_init_charge(*, amount: str, currency: str, reference: str, customer: dict, redirect_url: str) -> dict:
+def korapay_init_charge(*, amount: str, currency: str, reference: str, customer: dict, redirect_url: str, metadata: dict | None = None) -> dict:
     url = f"{KORAPAY_BASE_URL}/charges/initialize"
     headers = {
         "Authorization": f"Bearer {getattr(settings, 'KORAPAY_SECRET_KEY', '')}",
         "Content-Type": "application/json",
     }
 
-    email = customer.get("email") or ""
-    if "@" not in email:
-        email = getattr(settings, "DEFAULT_PAYMENTS_EMAIL", "payments@duespay.app")
-    raw_name = customer.get("name") or "DuesPay User"
+    platform_name = getattr(settings, "PLATFORM_NAME", "Duespay")
+    platform_email = getattr(settings, "PLATFORM_EMAIL", "justondev05@gmail.com")
+
+    email = (customer or {}).get("email") or platform_email
+    if "@" not in str(email):
+        email = platform_email
+    raw_name = (customer or {}).get("name") or platform_name
     name = _sanitize_customer_name(raw_name)
 
     if not str(redirect_url).startswith("https://"):
-        # Dev-only fallback; Korapay prefers https
-        redirect_url = "http://localhost:5173/payment/callback"
+        if getattr(settings, "DEBUG", False):
+            logger.debug(f"[{_ts()}] Using non-HTTPS redirect_url in DEBUG: {redirect_url}")
+        else:
+            raise ValueError("redirect_url must be https in production")
+
+    meta = {"txn_ref": reference}
+    if isinstance(metadata, dict):
+        try:
+            # ensure simple JSON-serializable values
+            meta.update({k: (str(v) if isinstance(v, (Decimal,)) else v) for k, v in metadata.items()})
+        except Exception:
+            meta.update(metadata)
 
     payload = {
         "amount": _format_amount_2dp(amount),
@@ -76,23 +92,28 @@ def korapay_init_charge(*, amount: str, currency: str, reference: str, customer:
         "reference": reference,
         "redirect_url": redirect_url,
         "customer": {"name": name, "email": email},
-        "metadata": {"txn_ref": reference},
+        "metadata": meta,
     }
 
+    logger.info(f"[{_ts()}][CHARGE][REQ] ref={reference} amount={payload['amount']} email={email} meta={meta}")
+    print(f"[{_ts()}] CHARGE REQ ref={reference} amount={payload['amount']} email={email}")
+
     resp = requests.post(url, json=payload, headers=headers, timeout=30)
+    try:
+        body = resp.json()
+    except Exception:
+        body = {"text": resp.text}
+
     if not resp.ok:
-        try:
-            body = resp.json()
-        except Exception:
-            body = {"text": resp.text}
-        logger.error(f"Korapay init 4xx/5xx: status={resp.status_code} body={body}")
+        logger.error(f"[{_ts()}][CHARGE][ERR] ref={reference} status={resp.status_code} body={body}")
+        print(f"[{_ts()}] CHARGE ERR ref={reference} status={resp.status_code}")
         resp.raise_for_status()
-    return resp.json()
+
+    logger.info(f"[{_ts()}][CHARGE][OK] ref={reference} status={resp.status_code}")
+    print(f"[{_ts()}] CHARGE OK ref={reference} status={resp.status_code}")
+    return body
 
 def korapay_payout_bank(*, amount: str, bank_code: str, account_number: str, reference: str, narration: str, customer: dict) -> dict:
-    """
-    Initiate a payout to a bank account using Korapay disburse API.
-    """
     endpoint = getattr(settings, "KORAPAY_PAYOUT_PATH", "/transactions/disburse")
     url = f"{KORAPAY_BASE_URL.rstrip('/')}{endpoint}"
     headers = {
@@ -100,8 +121,22 @@ def korapay_payout_bank(*, amount: str, bank_code: str, account_number: str, ref
         "Content-Type": "application/json",
     }
 
+    # Validations to prevent bad disbursements
+    try:
+        amt_num = _amount_number(amount)
+        if isinstance(amt_num, (int, float)) and amt_num <= 0:
+            raise ValueError("Amount must be > 0")
+    except Exception as e:
+        logger.error(f"[{_ts()}][PAYOUT][VALIDATION] bad amount={amount} ref={reference} err={e}")
+        raise
+
     bank = str(bank_code or "").strip()
     acct = str(account_number or "").strip()
+    if not bank.isdigit() or len(bank) < 3:
+        raise ValueError(f"Invalid bank code: {bank}")
+    if not acct.isdigit() or len(acct) != 10:
+        raise ValueError(f"Invalid account number: {acct}")
+
     cust_name = _sanitize_customer_name((customer or {}).get("name") or "Association")
     cust_email = (customer or {}).get("email") or "finance@duespay.app"
 
@@ -109,19 +144,16 @@ def korapay_payout_bank(*, amount: str, bank_code: str, account_number: str, ref
         "reference": reference,
         "destination": {
             "type": "bank_account",
-            "amount": _amount_number(amount),
+            "amount": amt_num,
             "currency": "NGN",
             "narration": (narration or "")[:80],
-            "bank_account": {
-                "bank": bank,
-                "account": acct,
-            },
-            "customer": {
-                "name": cust_name,
-                "email": cust_email,
-            },
+            "bank_account": {"bank": bank, "account": acct},
+            "customer": {"name": cust_name, "email": cust_email},
         },
     }
+
+    logger.info(f"[{_ts()}][PAYOUT][REQ] ref={reference} amount={amt_num} bank={bank} acct={acct}")
+    print(f"[{_ts()}] PAYOUT REQ ref={reference} amount={amt_num} bank={bank} acct={acct}")
 
     resp = requests.post(url, json=payload, headers=headers, timeout=30)
     try:
@@ -130,10 +162,11 @@ def korapay_payout_bank(*, amount: str, bank_code: str, account_number: str, ref
         data = {"text": resp.text}
 
     if resp.status_code in (200, 201):
-        logger.info(f"Korapay payout ok ref={reference} resp={data}")
+        logger.info(f"[{_ts()}][PAYOUT][OK] ref={reference} resp={data}")
+        print(f"[{_ts()}] PAYOUT OK ref={reference}")
         return data
 
-    # Idempotency tolerance for duplicate references
+    # Idempotency: treat duplicate reference as OK
     duplicate = False
     try:
         code = (data.get("code") or "").lower()
@@ -142,9 +175,11 @@ def korapay_payout_bank(*, amount: str, bank_code: str, account_number: str, ref
     except Exception:
         pass
     if duplicate:
-        logger.info(f"Korapay payout duplicate (idempotent) ref={reference} resp={data}")
+        logger.info(f"[{_ts()}][PAYOUT][DUP] ref={reference} resp={data}")
+        print(f"[{_ts()}] PAYOUT DUP ref={reference}")
         return data
 
-    logger.error(f"Korapay payout failed status={resp.status_code} resp={data}")
+    logger.error(f"[{_ts()}][PAYOUT][ERR] ref={reference} status={resp.status_code} resp={data}")
+    print(f"[{_ts()}] PAYOUT ERR ref={reference} status={resp.status_code}")
     resp.raise_for_status()
     return data

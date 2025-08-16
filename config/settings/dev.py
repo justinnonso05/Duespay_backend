@@ -47,3 +47,5 @@ DEFAULT_FROM_EMAIL = f"DUESPAY <{EMAIL_HOST_USER}>"
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 FRONTEND_URL = "http://localhost:5173"
+
+
