@@ -23,6 +23,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, HttpResponseForbidden
 from django.utils import timezone
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
 from .models import PlatformVBA, AdminUser
 from .serializers import (
@@ -54,6 +57,64 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class GoogleLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get("id_token")
+
+        try:
+            # Verify token with Google
+            idinfo = id_token.verify_oauth2_token(
+                token, requests.Request(), settings.GOOGLE_CLIENT_ID
+            )
+
+            email = idinfo["email"]
+            first_name = idinfo.get("given_name", "")
+            last_name = idinfo.get("family_name", "")
+
+            # Check if user exists
+            user, created = AdminUser.objects.get_or_create(
+                email=email,
+                defaults={
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "auth_mode": "google",
+                }
+            )
+
+            # If the user was created, mark first login
+            if created:
+                user.is_first_login = True
+                user.save()
+            else:
+                # If existing user registered with email but tries google login → allow since emails match
+                if user.auth_mode == "email":
+                    pass  
+                elif user.auth_mode != "google":
+                    return Response({"error": "Invalid auth mode"}, status=400)
+
+            # Issue tokens
+            refresh = RefreshToken.for_user(user)
+
+            # Set is_first_login to False after first login
+            was_first_login = user.is_first_login
+            if was_first_login:
+                user.is_first_login = False
+                user.save(update_fields=["is_first_login"])
+
+            return Response({
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "is_first_login": was_first_login,
+                "auth_mode": user.auth_mode,
+            })
+
+        except ValueError:
+            return Response({"error": "Invalid Google token"}, status=400)
+
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer

@@ -45,12 +45,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['username'] = user.username
+        token['email'] = user.email
         return token
 
     def validate(self, attrs):
-        data = super().validate(attrs)
+        user = AdminUser.objects.filter(email=attrs['email']).first()
+        if not user:
+            raise serializers.ValidationError("Invalid credentials")
 
+        # Prevent Google users from logging in with password
+        if user.auth_mode == "google":
+            raise serializers.ValidationError("This account was registered with Google. Please use Google login.")
+
+        data = super().validate(attrs)
         data['is_first_login'] = self.user.is_first_login
 
         if self.user.is_first_login:
@@ -60,12 +67,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
 
     class Meta:
         model = AdminUser
-        fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'password']
+        fields = ['email', 'first_name', 'last_name', 'phone_number', 'password']
 
     def validate_password(self, value):
         check_password(value)
@@ -73,14 +81,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = AdminUser.objects.create_user(
-            username=validated_data['username'],
             email=validated_data['email'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            phone_number=validated_data['phone_number'],
-            password=validated_data['password']
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            phone_number=validated_data.get('phone_number', ''),
+            password=validated_data['password'],
+            auth_mode="email",
         )
         return user
+
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()

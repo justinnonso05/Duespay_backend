@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from main.views import PasswordResetConfirmView, PasswordResetRequestView, RegisterView, CustomTokenObtainPairView
+from main.views import GoogleLoginView, PasswordResetConfirmView, PasswordResetRequestView, RegisterView, CustomTokenObtainPairView
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -19,6 +19,7 @@ urlpatterns = [
     path('', include('main.urls')),
 
     # auth
+    path("auth/google/", GoogleLoginView.as_view(), name="google-login"),
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  
     path('auth/register/', RegisterView.as_view(), name='register'),

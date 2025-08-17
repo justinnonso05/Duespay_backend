@@ -7,7 +7,7 @@ from transactions.models import Transaction
 @receiver(post_save, sender=AdminUser)
 def create_association_for_user(sender, instance, created, **kwargs):
     if created:
-        base_short_name = instance.username.lower()
+        base_short_name = instance.email.split('@')[0].lower()
         short_name = base_short_name
         counter = 1
         while Association.objects.filter(association_short_name=short_name).exists():

@@ -145,3 +145,5 @@ Traceback (most recent call last):
 requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://api.korapay.com/merchant/api/v1/transactions/disburse
 [2025-08-16T11:41:32.056065+00:00][PAYOUT][REQ] ref=TX-1754-267-HP-OUT amount=150 bank=090405 acct=9034049657
 [2025-08-16T11:41:33.886947+00:00][PAYOUT][ERR] ref=TX-1754-267-HP-OUT status=409 resp={'status': False, 'error': 'conflict', 'message': 'You are not authorized for payout in NGN to bank_account via api', 'data': {'status': 'failed', 'message': 'You are not authorized for payout in NGN to bank_account via api', 'reference': 'TX-1754-267-HP-OUT'}}
+[2025-08-17T12:54:12.989706+00:00][BANKS][OK] fetched=272
+[2025-08-17T12:54:13.015135+00:00][BANKS] Using cached banks count=272

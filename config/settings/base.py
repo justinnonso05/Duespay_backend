@@ -124,6 +124,8 @@ KORAPAY_SECRET_KEY = config('KORAPAY_SECRET_KEY', default='')
 KORAPAY_PUBLIC_KEY = config('KORAPAY_PUBLIC_KEY', default='')  
 KORAPAY_ENCRYPTION_KEY = config('KORAPAY_ENCRYPTION_KEY', default='')   
 
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+
 # OCR_SPACE_API_KEY = config('OCR_SPACE_API_KEY', default='helloworld')
 
 # Logging configuration

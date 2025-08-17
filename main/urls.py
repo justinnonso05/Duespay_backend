@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserProfileView, ping_view, InitiatePaymentView, korapay_webhook, PaymentStatusView
+from .views import GoogleLoginView, UserProfileView, ping_view, InitiatePaymentView, korapay_webhook, PaymentStatusView
 
 urlpatterns = [
     path('adminuser/', UserProfileView.as_view(), name='user-profile'),

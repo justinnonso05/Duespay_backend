@@ -89,7 +89,7 @@ class AdminProfileSerializer(serializers.Serializer):
         return {
             'id': obj.admin.id,
             'email': obj.admin.email,
-            'username': obj.admin.username,
+            # 'username': obj.admin.username,
             'first_name': obj.admin.first_name,
             'last_name': obj.admin.last_name,
         }
