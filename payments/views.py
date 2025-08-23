@@ -12,7 +12,7 @@ from .serializers import (
 from association.models import Session
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
-from .services import VerifyBankService
+from .services import VerifyBankService, FlutterwaveBankService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -193,45 +193,58 @@ class ReceiverBankAccountViewSet(viewsets.ModelViewSet):
 
 
 class BankListView(APIView):
-    """Get list of Nigerian banks from Nubapi"""
+    """Get list of Nigerian banks from provider"""
     permission_classes = [AllowAny]
 
     def get(self, request):
-        banks = VerifyBankService.get_bank_list()
+        provider = request.query_params.get("provider", "korapay").lower()
+        if provider == "flutterwave":
+            # Call Flutterwave service and normalize
+            try:
+                fw_resp = FlutterwaveBankService.get_bank_list()
+                # Flutterwave: {"status": "success", "message": "...", "data": [banks]}
+                banks = [
+                    {"name": b.get("name"), "code": b.get("code")}
+                    for b in (fw_resp.get("data") or [])
+                    if b.get("name") and b.get("code")
+                ]
+            except Exception as e:
+                logger.error(f"[BANKS][API] Flutterwave error: {e}")
+                banks = []
+        else:
+            banks = VerifyBankService.get_bank_list()
+
         if not banks:
+            logger.error("[BANKS][API] Could not retrieve bank list at the moment.")
             return Response(
-                {"error": "Could not retrieve bank list at the moment."}, 
+                {"status": "error", "message": "Could not retrieve bank list at the moment.", "banks": []},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
         return Response({"status": "success", "banks": banks})
-
 
 class VerifyBankAccountView(APIView):
     """Verify bank account details only - NO SAVING"""
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        print(f"VerifyBankAccountView called with data: {request.data}")
-        logger.info(f"Verification request from user: {request.user}")
-        logger.info(f"Request data: {request.data}")
-        
+        logger.info(f"[BANK_VERIFY][API] Verification request from user: {request.user}")
+        logger.info(f"[BANK_VERIFY][API] Request data: {request.data}")
+
         try:
-            # Check if user has association
             try:
                 association = request.user.association
-                logger.info(f"User association found: {association}")
+                logger.info(f"[BANK_VERIFY][API] User association found: {association}")
             except AttributeError:
-                logger.error("User has no association")
+                logger.error("[BANK_VERIFY][API] User has no association")
                 return Response({
                     "success": False,
                     "message": "User is not associated with any association.",
                     "errors": {"user": ["No association found"]}
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Validate input data
             serializer = BankAccountVerificationSerializer(data=request.data)
             if not serializer.is_valid():
-                logger.error(f"Validation errors: {serializer.errors}")
+                logger.error(f"[BANK_VERIFY][API] Validation errors: {serializer.errors}")
                 return Response({
                     "success": False,
                     "message": "Validation failed",
@@ -240,42 +253,62 @@ class VerifyBankAccountView(APIView):
 
             account_number = serializer.validated_data['account_number']
             bank_code = serializer.validated_data['bank_code']
-            logger.info(f"Attempting to verify: {account_number} with bank code: {bank_code}")
+            provider = request.query_params.get("provider", "korapay").lower()
+            logger.info(f"[BANK_VERIFY][API] Attempting to verify: {account_number} with bank code: {bank_code} via {provider}")
 
-            # Verify with Nubapi
-            try:
+            if provider == "flutterwave":
+                fw_resp = FlutterwaveBankService.verify_account(account_number, bank_code)
+                if fw_resp and fw_resp.get("status") == "success" and fw_resp.get("data"):
+                    data = fw_resp["data"]
+                    # Lookup bank name using bank_code
+                    banks_resp = FlutterwaveBankService.get_bank_list()
+                    banks = banks_resp.get("data", []) if isinstance(banks_resp, dict) else banks_resp
+                    bank_name = ""
+                    for b in banks:
+                        if b.get("code") == data.get("bank_code", bank_code):
+                            bank_name = b.get("name", "")
+                            break
+                    verification_data = {
+                        "account_name": data.get("account_name", ""),
+                        "bank_name": bank_name,
+                        "account_number": data.get("account_number", account_number),
+                        "bank_code": data.get("bank_code", bank_code),
+                        "verified": True
+                    }
+                    return Response({
+                        "success": True,
+                        "message": fw_resp.get("message", "Bank account verified successfully"),
+                        "data": verification_data
+                    })
+                else:
+                    fail_message = fw_resp.get("message", "Bank account verification failed. Please check your details.") if fw_resp else "Bank account verification failed."
+                    return Response({
+                        "success": False,
+                        "message": fail_message,
+                        "errors": {"verification": [fail_message]}
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
                 verification_data = VerifyBankService.verify_account(account_number, bank_code)
-                logger.info(f"Verification result: {verification_data}")
-            except Exception as e:
-                logger.error(f"VerifyBankService error: {str(e)}")
+                if not verification_data:
+                    return Response({
+                        "success": False,
+                        "message": "Bank account verification failed. Please check your details.",
+                        "errors": {"verification": ["Invalid account details"]}
+                    }, status=status.HTTP_400_BAD_REQUEST)
                 return Response({
-                    "success": False,
-                    "message": "Bank verification service error",
-                    "errors": {"service": [str(e)]}
-                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-            
-            if not verification_data:
-                return Response({
-                    "success": False,
-                    "message": "Bank account verification failed. Please check your details.",
-                    "errors": {"verification": ["Invalid account details"]}
-                }, status=status.HTTP_400_BAD_REQUEST)
+                    "success": True,
+                    "message": "Bank account verified successfully",
+                    "data": {
+                        "account_name": verification_data.get('account_name', ''),
+                        "bank_name": verification_data.get('bank_name', ''),
+                        "account_number": verification_data.get('account_number', account_number),
+                        "bank_code": verification_data.get('bank_code', bank_code),
+                        "verified": True
+                    }
+                })
 
-            # Return verification data WITHOUT saving
-            return Response({
-                "success": True,
-                "message": "Bank account verified successfully",
-                "data": {
-                    "account_name": verification_data.get('account_name', ''),
-                    "bank_name": verification_data.get('bank_name', ''),
-                    "account_number": verification_data.get('account_number', account_number),
-                    "bank_code": verification_data.get('bank_code', bank_code),
-                    "verified": True
-                }
-            })
-            
         except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+            logger.error(f"[BANK_VERIFY][API] Unexpected error: {str(e)}", exc_info=True)
             return Response({
                 "success": False,
                 "message": "An unexpected error occurred",
