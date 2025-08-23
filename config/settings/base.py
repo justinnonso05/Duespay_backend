@@ -126,7 +126,10 @@ KORAPAY_ENCRYPTION_KEY = config('KORAPAY_ENCRYPTION_KEY', default='')
 
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
 
-# OCR_SPACE_API_KEY = config('OCR_SPACE_API_KEY', default='helloworld')
+FLW_CLIENT_ID = config('FLW_CLIENT_ID', default='')
+FLW_CLIENT_SECRET = config('FLW_CLIENT_SECRET', default='')
+FLW_WEBHOOK_SECRET = config('FLW_WEBHOOK_SECRET', default='')
+FLW_ENV = config('FLW_ENV', default='developersandbox')
 
 # Logging configuration
 LOGGING = {
