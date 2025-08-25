@@ -6,3 +6,4 @@
 /*.pdf
 /receipt_compact.py
 /db.sqlite3
+/.ruff_cache/

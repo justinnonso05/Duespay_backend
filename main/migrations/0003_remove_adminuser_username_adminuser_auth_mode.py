@@ -6,17 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0002_platformvba'),
+        ("main", "0002_platformvba"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='adminuser',
-            name='username',
+            model_name="adminuser",
+            name="username",
         ),
         migrations.AddField(
-            model_name='adminuser',
-            name='auth_mode',
-            field=models.CharField(choices=[('email', 'Email'), ('google', 'Google')], default='email', max_length=10),
+            model_name="adminuser",
+            name="auth_mode",
+            field=models.CharField(
+                choices=[("email", "Email"), ("google", "Google")],
+                default="email",
+                max_length=10,
+            ),
         ),
     ]

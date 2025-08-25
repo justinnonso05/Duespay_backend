@@ -1,32 +1,37 @@
 from rest_framework import serializers
+
 from .models import Payer
+
 
 class PayerSerializer(serializers.ModelSerializer):
     total_transactions = serializers.SerializerMethodField()
 
     class Meta:
         model = Payer
-        fields = '__all__'
-        read_only_fields = ['association']
+        fields = "__all__"
+        read_only_fields = ["association"]
 
     def get_total_transactions(self, obj):
         return obj.transactions.count()
 
     def create(self, validated_data):
-        user = self.context['request'].user
+        user = self.context["request"].user
         association = user.association
-        validated_data['association'] = association
-        
+        validated_data["association"] = association
+
         # Get session from validated data or use current session
-        session = validated_data.get('session')
+        session = validated_data.get("session")
         if not session and association:
             session = association.current_session
             if not session:
-                raise serializers.ValidationError("No current session available. Please create a session first.")
-            validated_data['session'] = session
-            
+                raise serializers.ValidationError(
+                    "No current session available. Please create a session first."
+                )
+            validated_data["session"] = session
+
         return super().create(validated_data)
-    
+
+
 class PayerCheckSerializer(serializers.Serializer):
     association_short_name = serializers.CharField()
     matric_number = serializers.CharField()
@@ -35,4 +40,6 @@ class PayerCheckSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     faculty = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    department = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    department = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )

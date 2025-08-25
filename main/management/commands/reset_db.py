@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
+
 from django.apps import apps
-from django.core.management.base import BaseCommand
-from django.core.management import call_command
-from django.db import connection
 from django.conf import settings
+from django.core.management import call_command
+from django.core.management.base import BaseCommand
+from django.db import connection
 
 
 class Command(BaseCommand):
@@ -67,7 +68,9 @@ class Command(BaseCommand):
                 cursor.execute("DROP SCHEMA public CASCADE;")
                 cursor.execute("CREATE SCHEMA public;")
                 cursor.execute("GRANT ALL ON SCHEMA public TO public;")
-            self.stdout.write(self.style.SUCCESS("  -> PostgreSQL public schema wiped."))
+            self.stdout.write(
+                self.style.SUCCESS("  -> PostgreSQL public schema wiped.")
+            )
 
     def _delete_migrations(self):
         self.stdout.write("\nDeleting old migration files...")
