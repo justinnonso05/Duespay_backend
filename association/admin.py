@@ -9,11 +9,11 @@ class AssociationAdmin(ModelAdmin):
     list_display = (
         "association_name",
         "association_short_name",
-        "Association_type",
+        "association_type",
         "admin",
     )
     search_fields = ("association_name", "association_short_name", "admin__username")
-    list_filter = ("Association_type",)
+    list_filter = ("association_type",)
 
 
 @admin.register(Notification)

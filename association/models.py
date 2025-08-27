@@ -22,7 +22,7 @@ class Association(models.Model):
     association_short_name = models.CharField(
         max_length=50, unique=True, default="other"
     )
-    Association_type = models.CharField(
+    association_type = models.CharField(
         max_length=20, choices=ASS_CHOICES, default="Other"
     )
     theme_color = models.CharField(max_length=7, default="#9810fa")
@@ -41,7 +41,7 @@ class Association(models.Model):
     )
 
     def __str__(self):
-        return f"{self.association_short_name} ({self.Association_type})"
+        return f"{self.association_short_name} ({self.association_type})"
 
     @property
     def logo_url(self):

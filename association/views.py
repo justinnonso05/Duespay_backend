@@ -10,16 +10,13 @@ from .serializers import (
     AdminProfileSerializer,
     AssociationSerializer,
     NotificationSerializer,
-    SessionCreateSerializer,
     SessionSerializer,
 )
-
 
 class NotificationPagination(PageNumberPagination):
     page_size = 5
     page_size_query_param = "page_size"
     max_page_size = 10
-
 
 class AssociationViewSet(viewsets.ModelViewSet):
     queryset = Association.objects.all()
@@ -36,7 +33,6 @@ class AssociationViewSet(viewsets.ModelViewSet):
             return Association.objects.none()
         except (AttributeError, Association.DoesNotExist):
             return Association.objects.none()
-
 
 class RetrieveAssociationViewSet(generics.RetrieveAPIView):
     queryset = Association.objects.all()
@@ -162,11 +158,6 @@ class SessionViewSet(viewsets.ModelViewSet):
                 "-created_at"
             )
         return Session.objects.none()
-
-    def get_serializer_class(self):
-        if self.action == "create":
-            return SessionCreateSerializer
-        return SessionSerializer
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

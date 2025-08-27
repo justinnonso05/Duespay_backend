@@ -11,7 +11,7 @@ from .views import (
 
 router = DefaultRouter()
 
-router.register("transactions", TransactionViewSet)
+router.register("", TransactionViewSet)
 
 urlpatterns = router.urls + [
     path(

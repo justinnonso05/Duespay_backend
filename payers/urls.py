@@ -5,8 +5,8 @@ from .views import PayerCheckView, PayerViewSet
 
 router = DefaultRouter()
 
-router.register("payers", PayerViewSet)
+router.register("", PayerViewSet)
 
-urlpatterns = router.urls + [
-    path("payer-check/", PayerCheckView.as_view(), name="payer-check"),
-]
+urlpatterns = [
+    path('check/', PayerCheckView.as_view(), name='payer-check'),  # /api/payers/check/
+] + router.urls

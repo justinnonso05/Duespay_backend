@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                     models.CharField(default="other", max_length=50, unique=True),
                 ),
                 (
-                    "Association_type",
+                    "association_type",
                     models.CharField(
                         choices=[
                             ("hall", "Hall"),

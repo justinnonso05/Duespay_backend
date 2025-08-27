@@ -13,7 +13,6 @@ from .services import PayerService
 
 
 class PayerCheckView(APIView):
-
     def post(self, request):
         serializer = PayerCheckSerializer(data=request.data)
         if not serializer.is_valid():
@@ -56,7 +55,7 @@ class PayerCheckView(APIView):
             {
                 "success": True,
                 "payer_id": payer.id,
-                "message": "Payer found or updated successfully.",
+                "message": "Payer Created or updated successfully.",
             },
             status=200,
         )
@@ -109,12 +108,12 @@ class PayerViewSet(viewsets.ModelViewSet):
         # Filter by faculty
         faculty = self.request.query_params.get("faculty")
         if faculty:
-            queryset = queryset.filter(faculty__iexact=faculty)
+            queryset = queryset.filter(faculty__icontains=faculty)
 
         # Filter by department
         department = self.request.query_params.get("department")
         if department:
-            queryset = queryset.filter(department__iexact=department)
+            queryset = queryset.filter(department__icontains=department)
 
         return queryset
 
