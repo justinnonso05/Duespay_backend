@@ -2,9 +2,10 @@
 
 import cloudinary.models
 import django.db.models.deletion
-import utils.utils
 from django.conf import settings
 from django.db import migrations, models
+
+import utils.utils
 
 
 class Migration(migrations.Migration):
@@ -17,47 +18,124 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Association',
+            name="Association",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('association_name', models.CharField(default='other', max_length=255, unique=True)),
-                ('association_short_name', models.CharField(default='other', max_length=50, unique=True)),
-                ('Association_type', models.CharField(choices=[('hall', 'Hall'), ('department', 'Department'), ('faculty', 'Faculty'), ('other', 'Other')], default='Other', max_length=20)),
-                ('theme_color', models.CharField(default='#9810fa', max_length=7)),
-                ('logo', cloudinary.models.CloudinaryField(default='DuesPay/default.jpg', max_length=255, validators=[utils.utils.validate_file_type], verbose_name='image')),
-                ('admin', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='association', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "association_name",
+                    models.CharField(default="other", max_length=255, unique=True),
+                ),
+                (
+                    "association_short_name",
+                    models.CharField(default="other", max_length=50, unique=True),
+                ),
+                (
+                    "association_type",
+                    models.CharField(
+                        choices=[
+                            ("hall", "Hall"),
+                            ("department", "Department"),
+                            ("faculty", "Faculty"),
+                            ("other", "Other"),
+                        ],
+                        default="Other",
+                        max_length=20,
+                    ),
+                ),
+                ("theme_color", models.CharField(default="#9810fa", max_length=7)),
+                (
+                    "logo",
+                    cloudinary.models.CloudinaryField(
+                        default="DuesPay/default.jpg",
+                        max_length=255,
+                        validators=[utils.utils.validate_file_type],
+                        verbose_name="image",
+                    ),
+                ),
+                (
+                    "admin",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="association",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Notification',
+            name="Notification",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('message', models.TextField()),
-                ('is_read', models.BooleanField(default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('association', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to='association.association')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("message", models.TextField()),
+                ("is_read", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "association",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="notifications",
+                        to="association.association",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Session',
+            name="Session",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=100)),
-                ('start_date', models.DateField(blank=True, null=True)),
-                ('end_date', models.DateField(blank=True, null=True)),
-                ('is_active', models.BooleanField(default=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('association', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sessions', to='association.association')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=100)),
+                ("start_date", models.DateField(blank=True, null=True)),
+                ("end_date", models.DateField(blank=True, null=True)),
+                ("is_active", models.BooleanField(default=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "association",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sessions",
+                        to="association.association",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
-                'unique_together': {('association', 'title')},
+                "ordering": ["-created_at"],
+                "unique_together": {("association", "title")},
             },
         ),
         migrations.AddField(
-            model_name='association',
-            name='current_session',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='current_for_association', to='association.session'),
+            model_name="association",
+            name="current_session",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="current_for_association",
+                to="association.session",
+            ),
         ),
     ]

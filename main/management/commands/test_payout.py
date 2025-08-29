@@ -1,24 +1,45 @@
-from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
-from decimal import Decimal
 import json
 import time
+from decimal import Decimal
 
-from transactions.models import Transaction
-from payments.models import ReceiverBankAccount
-from main.services import korapay_payout_bank
 from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
+
+from main.services import korapay_payout_bank
+from payments.models import ReceiverBankAccount
+from transactions.models import Transaction
 
 
 class Command(BaseCommand):
     help = "Manually trigger a Korapay payout for a transaction."
 
     def add_arguments(self, parser):
-        parser.add_argument("--ref", type=str, help="Transaction reference_id to payout. If omitted, uses latest verified transaction.")
-        parser.add_argument("--amount", type=str, help="Override amount to payout (NGN). Defaults to txn.amount_paid.")
-        parser.add_argument("--payout-ref", type=str, help="Override payout reference. Defaults to '<txn_ref>-OUT'.")
-        parser.add_argument("--unique", action="store_true", help="Append a timestamp to payout reference to avoid duplicate-reference errors.")
-        parser.add_argument("--dry-run", action="store_true", help="Print what would be sent without calling Korapay.")
+        parser.add_argument(
+            "--ref",
+            type=str,
+            help="Transaction reference_id to payout. If omitted, uses latest verified transaction.",
+        )
+        parser.add_argument(
+            "--amount",
+            type=str,
+            help="Override amount to payout (NGN). Defaults to txn.amount_paid.",
+        )
+        parser.add_argument(
+            "--payout-ref",
+            type=str,
+            help="Override payout reference. Defaults to '<txn_ref>-OUT'.",
+        )
+        parser.add_argument(
+            "--unique",
+            action="store_true",
+            help="Append a timestamp to payout reference to avoid duplicate-reference errors.",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Print what would be sent without calling Korapay.",
+        )
 
     def handle(self, *args, **options):
         ref = options.get("ref")
@@ -36,12 +57,16 @@ class Command(BaseCommand):
         else:
             txn = Transaction.objects.filter(is_verified=True).order_by("-id").first()
             if not txn:
-                raise CommandError("No verified transactions found. Provide --ref or verify a transaction first.")
+                raise CommandError(
+                    "No verified transactions found. Provide --ref or verify a transaction first."
+                )
 
         # Receiver bank
         rcv = ReceiverBankAccount.objects.filter(association=txn.association).first()
         if not rcv:
-            raise CommandError(f"No ReceiverBankAccount for association_id={txn.association_id}")
+            raise CommandError(
+                f"No ReceiverBankAccount for association_id={txn.association_id}"
+            )
 
         # Amount
         if override_amount:
@@ -83,7 +108,9 @@ class Command(BaseCommand):
         self.stdout.write(f"amount={amount}")
         self.stdout.write(f"bank_code={bank_code} account_number={account_number}")
         self.stdout.write(f"customer_name={assoc_name} customer_email={assoc_email}")
-        self.stdout.write(f"KORAPAY_BASE_URL={getattr(settings, 'KORAPAY_BASE_URL', '')}")
+        self.stdout.write(
+            f"KORAPAY_BASE_URL={getattr(settings, 'KORAPAY_BASE_URL', '')}"
+        )
         self.stdout.write("")
 
         if dry_run:
@@ -91,7 +118,9 @@ class Command(BaseCommand):
                 "reference": payout_ref,
                 "destination": {
                     "type": "bank_account",
-                    "amount": float(amount) if amount != amount.to_integral() else int(amount),
+                    "amount": (
+                        float(amount) if amount != amount.to_integral() else int(amount)
+                    ),
                     "currency": "NGN",
                     "narration": narration,
                     "bank_account": {"bank": bank_code, "account": account_number},
@@ -116,5 +145,7 @@ class Command(BaseCommand):
             self.stdout.write(json.dumps(resp, indent=2))
         except Exception as e:
             self.stderr.write(self.style.ERROR(f"Payout failed: {e}"))
-            self.stderr.write("Common causes: IP not whitelisted, insufficient wallet balance, invalid bank/account, duplicate reference.")
+            self.stderr.write(
+                "Common causes: IP not whitelisted, insufficient wallet balance, invalid bank/account, duplicate reference."
+            )
             raise
