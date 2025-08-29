@@ -6,4 +6,4 @@ class TransactionsConfig(AppConfig):
     name = "transactions"
 
     def ready(self):
-        pass
+        import transactions.signals

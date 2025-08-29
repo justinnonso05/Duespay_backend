@@ -6,4 +6,4 @@ class AssociationConfig(AppConfig):
     name = "association"
 
     def ready(self):
-        pass
+        import association.signals

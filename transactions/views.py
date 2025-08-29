@@ -392,6 +392,7 @@ class InitiatePaymentView(APIView):
             settings, "FRONTEND_URL", "https://duespay.vercel.app"
         )
         redirect_url = f"{str(frontend).rstrip('/')}/payment/callback?assoc={association.association_short_name}"
+        
 
         # Metadata for reconciliation
         metadata = {

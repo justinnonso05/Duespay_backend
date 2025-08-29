@@ -1,6 +1,5 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
 from .emails import send_admin_new_transaction_email, send_receipt_email
 from .models import Transaction, TransactionReceipt
 
