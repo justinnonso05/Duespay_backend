@@ -58,7 +58,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 # No session available, return empty queryset
                 queryset = Transaction.objects.none()
 
-        # Filter by verification status
+        # Filter by verification status (case-insensitive)
         status_param = self.request.query_params.get("status")
         if status_param is not None:
             if status_param.lower() == "verified":
@@ -66,7 +66,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             elif status_param.lower() == "unverified":
                 queryset = queryset.filter(is_verified=False)
 
-        # Search by payer name or reference id
+        # Search by payer name or reference id (case-insensitive)
         search = self.request.query_params.get("search")
         if search:
             queryset = queryset.filter(
@@ -387,11 +387,11 @@ class InitiatePaymentView(APIView):
             email = platform_email
         customer = {"name": full_name, "email": email}
 
-        # Frontend redirect
+        # Frontend redirect with association info
         frontend = getattr(settings, "KORAPAY_REDIRECT_URL", None) or getattr(
             settings, "FRONTEND_URL", "https://duespay.vercel.app"
         )
-        redirect_url = f"{str(frontend).rstrip('/')}/payment/callback"
+        redirect_url = f"{str(frontend).rstrip('/')}/payment/callback?assoc={association.association_short_name}"
 
         # Metadata for reconciliation
         metadata = {
