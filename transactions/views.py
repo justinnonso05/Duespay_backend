@@ -339,8 +339,9 @@ class InitiatePaymentView(APIView):
 
         # Base total (DB), add platform fee to charge only
         base_total = sum((item.amount for item in items_qs), Decimal("0.00"))
-        platform_fee = Decimal(str(getattr(settings, "PLATFORM_FEE_NGN", "100.00")))
-        charge_amount = base_total + platform_fee
+        platform_fee = Decimal(str(getattr(settings, "PLATFORM_PAYOUT_FEE_NGN", "100.00")))
+        platform_percent = Decimal(str(getattr(settings, "PLATFORM_PAYIN_PERCENT", "0.015")))
+        charge_amount = base_total + platform_fee + (base_total * platform_percent)
 
         # Create pending transaction with base amount only (exclude fee)
         txn = Transaction.objects.create(

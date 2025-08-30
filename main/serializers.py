@@ -43,6 +43,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password", None)
         user = AdminUser.objects.create(**validated_data)
         if password:
+            check_password(password)  
             user.set_password(password)
             user.save()
         return user
@@ -52,10 +53,11 @@ class AdminUserSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         if password:
+            check_password(password)  
             instance.set_password(password)
         instance.save()
         return instance
-
+    
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod

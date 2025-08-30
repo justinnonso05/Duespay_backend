@@ -7,13 +7,15 @@ class TransactionSerializer(serializers.ModelSerializer):
     payment_item_titles = serializers.SerializerMethodField()
     payer_first_name = serializers.CharField(source="payer.first_name", read_only=True)
     payer_last_name = serializers.CharField(source="payer.last_name", read_only=True)
+    payer_matric = serializers.CharField(source="payer.matric_number", read_only=True)
+    payer_email = serializers.CharField(source="payer.email", read_only=True)
     payer_name = serializers.SerializerMethodField()
     proof_of_payment_url = serializers.ReadOnlyField()
 
     class Meta:
         model = Transaction
         fields = "__all__"
-        read_only_fields = ["payer_name", "payment_item", "proof_of_payment_url"]
+        read_only_fields = ["payer_name", "payment_item", "payer_matric", "payer_email", "proof_of_payment_url"]
 
     def get_payment_item_titles(self, obj):
         return [item.title for item in obj.payment_items.all()]

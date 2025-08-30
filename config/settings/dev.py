@@ -8,6 +8,7 @@ INSTALLED_APPS += ["cloudinary", "cloudinary_storage"]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://c5a2096501ac.ngrok-free.app",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
