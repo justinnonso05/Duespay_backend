@@ -6,7 +6,7 @@ from decouple import config
 
 from .base import *
 
-DEBUG = False
+DEBUG = True
 
 
 INSTALLED_APPS += ["cloudinary", "cloudinary_storage"]
