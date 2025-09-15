@@ -1,5 +1,4 @@
 from django.db import models
-
 from association.models import Association, Session
 
 
@@ -24,6 +23,15 @@ class PaymentItem(models.Model):
         ("compulsory", "Compulsory"),
         ("optional", "Optional"),
     ]
+    LEVEL_CHOICES = [
+        ("100", "100 Level"),
+        ("200", "200 Level"),
+        ("300", "300 Level"),
+        ("400", "400 Level"),
+        ("500", "500 Level"),
+        ("600", "600 Level"),
+        ("All Levels", "All Levels"),
+    ]
     association = models.ForeignKey(
         Association, on_delete=models.CASCADE, related_name="payment_items"
     )
@@ -32,6 +40,7 @@ class PaymentItem(models.Model):
     session = models.ForeignKey(
         Session, on_delete=models.CASCADE, related_name="payment_items"
     )
+    compulsory_for = models.JSONField(blank=True, null=True, default=list)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -15,6 +15,7 @@ from main.views import (
     PasswordResetConfirmView,
     PasswordResetRequestView,
     RegisterView,
+    logout_all,
 )
 
 urlpatterns = [
@@ -29,6 +30,7 @@ urlpatterns = [
     path(
         "api/auth/login/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"
     ),
+    path("api/auth/logout/", logout_all, name="logout-all"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/register/", RegisterView.as_view(), name="register"),
     path(

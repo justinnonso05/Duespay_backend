@@ -36,6 +36,7 @@ class PayerCheckSerializer(serializers.Serializer):
     association_short_name = serializers.CharField()
     matric_number = serializers.CharField()
     email = serializers.EmailField()
+    level = serializers.CharField()
     phone_number = serializers.CharField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()

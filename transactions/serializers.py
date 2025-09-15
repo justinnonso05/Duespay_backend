@@ -57,6 +57,7 @@ class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
     transaction_reference_id = serializers.CharField(source="transaction.reference_id")
     payer_first_name = serializers.CharField(source="transaction.payer.first_name")
     payer_last_name = serializers.CharField(source="transaction.payer.last_name")
+    payer_level = serializers.CharField(source="transaction.payer.level")
     amount_paid = serializers.DecimalField(
         source="transaction.amount_paid", max_digits=10, decimal_places=2
     )
@@ -84,6 +85,7 @@ class TransactionReceiptDetailSerializer(serializers.ModelSerializer):
             "receipt_id",
             "receipt_no",
             "session_title",
+            "payer_level",
             "issued_at",
             "transaction_reference_id",
             "payer_first_name",

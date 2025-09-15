@@ -12,6 +12,7 @@ class AdminUser(AbstractUser):
     email = models.EmailField(unique=True, blank=False, null=False)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     is_first_login = models.BooleanField(default=True)
+    token_version = models.IntegerField(default=0)
     auth_mode = models.CharField(max_length=10, choices=AUTH_MODES, default="email")
 
     USERNAME_FIELD = "email"

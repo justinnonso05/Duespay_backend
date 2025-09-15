@@ -166,10 +166,19 @@ class SessionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         # When creating a new session, it becomes active and current
-        session = serializer.save()
-        # Set as current session for the association
-        session.association.current_session = session
-        session.association.save()
+        association = getattr(self.request.user, "association", None)
+        if association:
+            # Deactivate all other sessions for this association
+            Session.objects.filter(association=association, is_active=True).update(is_active=False)
+            
+            # Create the new session as active
+            session = serializer.save(is_active=True)
+            
+            # Set as current session for the association
+            association.current_session = session
+            association.save()
+        else:
+            session = serializer.save()
 
     @action(detail=True, methods=["post"])
     def set_current(self, request, pk=None):

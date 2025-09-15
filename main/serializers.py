@@ -63,6 +63,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
+        token['token_version'] = user.token_version 
         token["email"] = user.email
         return token
 
@@ -87,6 +88,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             self.user.save()
 
         data["message"] = "Login successful"
+        
+        # Remove refresh token from response
+        data.pop('refresh', None)
 
         return data
 

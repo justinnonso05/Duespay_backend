@@ -4,6 +4,15 @@ from association.models import Association, Session
 
 
 class Payer(models.Model):
+    LEVEL_CHOICES = [
+        ("100", "100 Level"),
+        ("200", "200 Level"),
+        ("300", "300 Level"),
+        ("400", "400 Level"),
+        ("500", "500 Level"),
+        ("600", "600 Level"),
+        ("All Levels", "All Levels"),
+    ]
     association = models.ForeignKey(
         Association, on_delete=models.CASCADE, related_name="payers"
     )
@@ -13,6 +22,7 @@ class Payer(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField()
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES, default="100")
     phone_number = models.CharField(max_length=20)
     matric_number = models.CharField(max_length=50)
     faculty = models.CharField(max_length=100, blank=True, null=True)

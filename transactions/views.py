@@ -14,6 +14,7 @@ from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 from association.models import Association, Session
 from payers.models import Payer
@@ -26,11 +27,16 @@ from .serializers import TransactionReceiptDetailSerializer, TransactionSerializ
 
 logger = logging.getLogger(__name__)
 
+class TransactionPagination(PageNumberPagination):
+    page_size = 7  
+    page_size_query_param = 'page_size'  
+    max_page_size = 1000
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = TransactionPagination
 
     def get_queryset(self):
         association = getattr(self.request.user, "association", None)

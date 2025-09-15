@@ -4,6 +4,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 
 from association.models import Association, Session
 
@@ -11,6 +12,11 @@ from .models import Payer
 from .serializers import PayerCheckSerializer, PayerSerializer
 from .services import PayerService
 
+
+class PayerPagination(PageNumberPagination):
+    page_size = 7
+    page_size_query_param = 'page_size'  
+    max_page_size = 1000
 
 class PayerCheckView(APIView):
     def post(self, request):
@@ -43,6 +49,7 @@ class PayerCheckView(APIView):
             association.current_session,  # Pass the session instance
             data["matric_number"],
             data["email"],
+            data["level"],
             data["phone_number"],
             data["first_name"],
             data["last_name"],
@@ -65,6 +72,7 @@ class PayerViewSet(viewsets.ModelViewSet):
     queryset = Payer.objects.all()
     serializer_class = PayerSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = PayerPagination
 
     def get_queryset(self):
         association = getattr(self.request.user, "association", None)
@@ -114,6 +122,11 @@ class PayerViewSet(viewsets.ModelViewSet):
         department = self.request.query_params.get("department")
         if department:
             queryset = queryset.filter(department__icontains=department)
+
+        # Filter by level
+        level = self.request.query_params.get("level")
+        if level:
+            queryset = queryset.filter(level=level)
 
         return queryset
 

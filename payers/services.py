@@ -1,4 +1,5 @@
 from .models import Payer
+from django.db import IntegrityError
 
 
 class PayerService:
@@ -8,6 +9,7 @@ class PayerService:
         session,
         matric_number,
         email,
+        level,
         phone_number,
         first_name,
         last_name,
@@ -24,6 +26,7 @@ class PayerService:
             payer.phone_number = phone_number
             payer.first_name = first_name
             payer.last_name = last_name
+            payer.level = level
             payer.faculty = faculty
             payer.department = department
             payer.save()
@@ -63,6 +66,7 @@ class PayerService:
                     session=session,
                     matric_number=matric_number,
                     email=email,
+                    level=level,
                     phone_number=phone_number,
                     first_name=first_name,
                     last_name=last_name,
@@ -70,7 +74,43 @@ class PayerService:
                     department=department,
                 )
                 return payer, None
-            except Exception as e:
-                return None, f"Error creating payer: {str(e)}"
+            except IntegrityError as e:
+                # Check which field caused the error
+                msg = str(e)
+                if "email" in msg:
+                    return (
+                        None,
+                        f"A payer with email '{email}' already exists in this session.",
+                    )
+                if "phone_number" in msg:
+                    return (
+                        None,
+                        f"A payer with phone number '{phone_number}' already exists in this session.",
+                    )
+                if "matric_number" in msg:
+                    return (
+                        None,
+                        f"A payer with matric number '{matric_number}' already exists in this session.",
+                    )
+                return None, "A unique constraint failed while creating payer."
+        except IntegrityError as e:
+            # Catch any IntegrityError that bubbles up
+            msg = str(e)
+            if "email" in msg:
+                return (
+                    None,
+                    f"A payer with email '{email}' already exists in this session.",
+                )
+            if "phone_number" in msg:
+                return (
+                    None,
+                    f"A payer with phone number '{phone_number}' already exists in this session.",
+                )
+            if "matric_number" in msg:
+                return (
+                    None,
+                    f"A payer with matric number '{matric_number}' already exists in this session.",
+                )
+            return None, "A unique constraint failed while creating payer."
         except Exception as e:
-            return None, f"Error checking payer: {str(e)}"
+            return None, f"Unexpected error: {str(e)}"

@@ -9,6 +9,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -43,10 +44,8 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             return user.payer
         return user
 
-
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
-
 
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
@@ -74,7 +73,6 @@ class GoogleLoginView(APIView):
                 },
             )
 
-            # If the user was created, mark first login
             if created:
                 user.is_first_login = True
                 user.save()
@@ -87,6 +85,10 @@ class GoogleLoginView(APIView):
 
             # Issue tokens
             refresh = RefreshToken.for_user(user)
+            # Add token_version to both tokens
+            refresh['token_version'] = user.token_version
+            access_token = refresh.access_token
+            access_token['token_version'] = user.token_version
 
             # Set is_first_login to False after first login
             was_first_login = user.is_first_login
@@ -96,8 +98,8 @@ class GoogleLoginView(APIView):
 
             return Response(
                 {
-                    "refresh": str(refresh),
-                    "access": str(refresh.access_token),
+                    # "refresh": str(refresh),
+                    "access": str(access_token),
                     "is_first_login": was_first_login,
                     "auth_mode": user.auth_mode,
                 }
@@ -185,3 +187,12 @@ class PasswordResetConfirmView(APIView):
         return Response(
             {"message": "Password has been reset successfully."}, status=200
         )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_all(request):
+    user = request.user
+    user.token_version += 1
+    user.save(update_fields=["token_version"])
+    return Response({"message": "Logged out from all devices"})

@@ -5,6 +5,22 @@ from .models import PaymentItem, ReceiverBankAccount
 
 
 class PaymentItemSerializer(serializers.ModelSerializer):
+    compulsory_for = serializers.ListField(
+        child=serializers.ChoiceField(
+            choices=[
+                ("100", "100 Level"),
+                ("200", "200 Level"),
+                ("300", "300 Level"),
+                ("400", "400 Level"),
+                ("500", "500 Level"),
+                ("600", "600 Level"),
+                ("All Levels", "All Levels"),
+            ]
+        ),
+        required=False,
+        allow_empty=True,
+    )
+
     class Meta:
         model = PaymentItem
         fields = "__all__"
@@ -14,6 +30,50 @@ class PaymentItemSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Amount must be greater than 0")
         return value
+
+    def validate_compulsory_for(self, value):
+        # Get the current status from the request data
+        status = self.initial_data.get('status')
+        
+        # If status is changing to optional, clear compulsory_for
+        if status == "optional":
+            return []
+        
+        # If no levels specified, default to all levels for compulsory items
+        if not value and status == "compulsory":
+            return ["All Levels"]
+        
+        # If empty list provided, keep it empty
+        if not value:
+            return []
+
+        valid_levels = ["100", "200", "300", "400", "500", "600", "All Levels"]
+        all_numeric_levels = ["100", "200", "300", "400", "500", "600"]
+
+        # If "All Levels" is explicitly selected, return it
+        if "All Levels" in value:
+            return ["All Levels"]
+        
+        # If all numeric levels (100-600) are selected, convert to "All Levels"
+        if set(value) == set(all_numeric_levels):
+            return ["All Levels"]
+
+        # Validate each level
+        for level in value:
+            if level not in valid_levels:
+                raise serializers.ValidationError(f"Invalid level: {level}")
+
+        return value
+
+    def update(self, instance, validated_data):
+        # Handle the business logic for status changes
+        new_status = validated_data.get('status', instance.status)
+        
+        # If changing from compulsory to optional, clear compulsory_for
+        if instance.status == "compulsory" and new_status == "optional":
+            validated_data['compulsory_for'] = []
+        
+        return super().update(instance, validated_data)
 
 
 class ReceiverBankAccountSerializer(serializers.ModelSerializer):
