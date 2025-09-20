@@ -74,6 +74,9 @@ ANYMAIL = {
 
 DEFAULT_FROM_EMAIL = "DuesPay <jcmailer.1@gmail.com>"
 
+KORAPAY_SECRET_KEY = config("KORAPAY_SECRET_KEY", default="")
+KORAPAY_PUBLIC_KEY = config("KORAPAY_PUBLIC_KEY", default="")
+KORAPAY_ENCRYPTION_KEY = config("KORAPAY_ENCRYPTION_KEY", default="")
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 

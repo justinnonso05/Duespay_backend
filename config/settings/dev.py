@@ -46,6 +46,10 @@ EMAIL_HOST_USER = "jcmailer.1@gmail.com"
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = f"DUESPAY <{EMAIL_HOST_USER}>"
 
+KORAPAY_SECRET_KEY = config("KORAPAY_TEST_SECRET_KEY", default="")
+KORAPAY_PUBLIC_KEY = config("KORAPAY_TEST_PUBLIC_KEY", default="")
+KORAPAY_ENCRYPTION_KEY = config("KORAPAY_TEST_ENCRYPTION_KEY", default="")
+
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 FRONTEND_URL = "http://localhost:5173"
