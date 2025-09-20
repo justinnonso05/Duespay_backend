@@ -6,4 +6,4 @@ class AssociationConfig(AppConfig):
     name = "association"
 
     def ready(self):
-        import association.signals
+        import association.signals # noqa
