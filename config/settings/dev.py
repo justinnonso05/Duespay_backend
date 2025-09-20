@@ -38,13 +38,13 @@ cloudinary.config(
     api_secret=CLOUDINARY_STORAGE["API_SECRET"],
 )
 
-EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
-
-ANYMAIL = {
-    "BREVO_API_KEY": config("BREVO_API_KEY"),
-}
-
-DEFAULT_FROM_EMAIL = "DuesPay <jcmailer.1@gmail.com>"
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "jcmailer.1@gmail.com"
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = f"DUESPAY <{EMAIL_HOST_USER}>"
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
