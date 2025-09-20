@@ -22,6 +22,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://duespay-backend.fly.dev",
     "https://duespay.onrender.com",
     "https://duespay.pythonanywhere.com",
+    "https://duespay-5hrhv.sevalla.app",
+    "https://duespay-backend-production.up.railway.app",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -46,6 +48,8 @@ ALLOWED_HOSTS = [
     "duespay.pythonanywhere.com",
     "duespay.onrender.com",
     "duespay-backend.fly.dev",
+    "duespay-backend-production.up.railway.app",
+    "duespay-5hrhv.sevalla.app"
 ]
 
 
@@ -62,14 +66,20 @@ cloudinary.config(
     api_secret=CLOUDINARY_STORAGE["API_SECRET"],
 )
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "jcmailer.1@gmail.com"
-EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = f"DUESPAY <{EMAIL_HOST_USER}>"
+EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+
+ANYMAIL = {
+    "BREVO_API_KEY": config("BREVO_API_KEY"),
+}
+
+DEFAULT_FROM_EMAIL = "DuesPay <jcmailer.1@gmail.com>"
+
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 FRONTEND_URL = "https://www.duespay.app"
+
+MONNIFY_BASE_URL = "https://api.monnify.com/api/v1"
+MONNIFY_API_KEY = config("MONNIFY_API_KEY", default="")
+MONNIFY_SECRET_KEY = config("MONNIFY_SECRET_KEY", default="")
+MONNIFY_CONTRACT_CODE = config("MONNIFY_CONTRACT_CODE", default="")

@@ -22,6 +22,9 @@ RUN set -ex && \
     rm -rf /root/.cache/
 COPY . /code
 
+RUN python manage.py collectstatic --noinput
+
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn --bind :8000 --workers 2 config.wsgi"]
+CMD ["sh", "-c", "python manage.py migrate && gunicorn --bind :8000 --workers 2 config.wsgi"]
+
