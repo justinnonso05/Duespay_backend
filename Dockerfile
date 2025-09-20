@@ -21,10 +21,9 @@ RUN set -ex && \
     pip install -r /tmp/requirements.txt && \
     rm -rf /root/.cache/
 COPY . /code
+
 RUN mkdir -p /code/staticfiles
-RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py migrate && gunicorn --bind :8000 --workers 2 config.wsgi"]
-
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn --bind :8000 --workers 2 config.wsgi"]
