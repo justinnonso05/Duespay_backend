@@ -53,3 +53,6 @@ KORAPAY_ENCRYPTION_KEY = config("KORAPAY_TEST_ENCRYPTION_KEY", default="")
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 FRONTEND_URL = "http://localhost:5173"
+BACKEND_URL = "http://localhost:8000"
+NGROK_URL = "https://300e5c2440fa.ngrok-free.app"
+KORAPAY_WEBHOOK_URL = f"{NGROK_URL}/api/transactions/webhook/"
