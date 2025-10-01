@@ -81,8 +81,5 @@ KORAPAY_ENCRYPTION_KEY = config("KORAPAY_ENCRYPTION_KEY", default="")
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 FRONTEND_URL = "https://www.duespay.app"
-
-MONNIFY_BASE_URL = "https://api.monnify.com/api/v1"
-MONNIFY_API_KEY = config("MONNIFY_API_KEY", default="")
-MONNIFY_SECRET_KEY = config("MONNIFY_SECRET_KEY", default="")
-MONNIFY_CONTRACT_CODE = config("MONNIFY_CONTRACT_CODE", default="")
+BACKEND_URL = "https://duespay.onrender.com"
+KORAPAY_WEBHOOK_URL = f"{BACKEND_URL}/api/transactions/webhook/"

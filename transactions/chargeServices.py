@@ -238,3 +238,94 @@ def korapay_payout_bank(
     print(f"[{_ts()}] PAYOUT ERR ref={reference} status={resp.status_code}")
     resp.raise_for_status()
     return data
+
+
+def korapay_init_bank_transfer(
+    *,
+    amount: str,
+    currency: str,
+    reference: str,
+    customer: dict,
+    notification_url: str = None,
+    account_name: str = None,
+    narration: str = None,
+    metadata: dict | None = None,
+    merchant_bears_cost: bool = False,
+) -> dict:
+    """
+    Create Korapay bank transfer payment with dynamic virtual account.
+    Customer bears cost by default (merchant_bears_cost=False).
+    """
+    url = f"{KORAPAY_BASE_URL}/charges/bank-transfer"
+    headers = {
+        "Authorization": f"Bearer {getattr(settings, 'KORAPAY_SECRET_KEY', '')}",
+        "Content-Type": "application/json",
+    }
+
+    platform_name = getattr(settings, "PLATFORM_NAME", "Duespay")
+    platform_email = getattr(settings, "PLATFORM_EMAIL", "justondev05@gmail.com")
+
+    email = (customer or {}).get("email") or platform_email
+    if "@" not in str(email):
+        email = platform_email
+    raw_name = (customer or {}).get("name") or platform_name
+    name = _sanitize_customer_name(raw_name)
+
+    # Prepare metadata
+    meta = {"txn_ref": reference}
+    if isinstance(metadata, dict):
+        try:
+            # Ensure simple JSON-serializable values (max 5 fields per Korapay docs)
+            filtered_meta = {}
+            for k, v in metadata.items():
+                if len(filtered_meta) >= 5:  # Korapay limit
+                    break
+                key = str(k)[:20]  # Max 20 chars per field name
+                value = str(v) if isinstance(v, (Decimal,)) else v
+                filtered_meta[key] = value
+            meta.update(filtered_meta)
+        except Exception:
+            if metadata:
+                meta.update(metadata)
+
+    payload = {
+        "reference": reference,
+        "amount": _amount_number(amount),
+        "currency": currency,
+        "customer": {"name": name, "email": email},
+        "merchant_bears_cost": merchant_bears_cost,
+    }
+
+    # Optional fields
+    if notification_url:
+        payload["notification_url"] = notification_url
+    if account_name:
+        payload["account_name"] = account_name
+    if narration:
+        payload["narration"] = narration[:80]  # Reasonable limit
+    if meta:
+        payload["metadata"] = meta
+
+    logger.info(
+        f"[{_ts()}][BANK_TRANSFER][REQ] ref={reference} amount={payload['amount']} email={email} merchant_bears_cost={merchant_bears_cost}"
+    )
+    print(
+        f"[{_ts()}] BANK_TRANSFER REQ ref={reference} amount={payload['amount']} email={email}"
+    )
+
+    resp = requests.post(url, json=payload, headers=headers, timeout=30)
+    try:
+        body = resp.json()
+    except Exception:
+        body = {"text": resp.text}
+
+    if not resp.ok:
+        logger.error(
+            f"[{_ts()}][BANK_TRANSFER][ERR] ref={reference} status={resp.status_code} body={body}"
+        )
+        print(f"[{_ts()}] BANK_TRANSFER ERR ref={reference} status={resp.status_code}")
+        resp.raise_for_status()
+
+    logger.info(f"[{_ts()}][BANK_TRANSFER][OK] ref={reference} status={resp.status_code}")
+    print(f"[{_ts()}] BANK_TRANSFER OK ref={reference} status={resp.status_code}")
+    return body
