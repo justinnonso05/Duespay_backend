@@ -82,7 +82,6 @@ python-decouple==3.8
 python-engineio==4.12.2
 python-socketio==5.13.0
 pytz==2025.2
-pywin32==311
 PyYAML==6.0.2
 pyzmq==27.0.1
 qrcode==8.2
