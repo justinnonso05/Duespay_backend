@@ -1,5 +1,6 @@
 import cloudinary
 from decouple import config
+import dj_database_url
 
 from .base import *
 
@@ -15,11 +16,17 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http:\/\/([a-zA-Z0-9-]+)\.localhost:5173$",
 ]
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.config(
+        default=config("DATABASE_URL"), conn_max_age=600, ssl_require=True
+    )
 }
 
 # DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
@@ -49,6 +56,11 @@ DEFAULT_FROM_EMAIL = f"DUESPAY <{EMAIL_HOST_USER}>"
 KORAPAY_SECRET_KEY = config("KORAPAY_TEST_SECRET_KEY", default="")
 KORAPAY_PUBLIC_KEY = config("KORAPAY_TEST_PUBLIC_KEY", default="")
 KORAPAY_ENCRYPTION_KEY = config("KORAPAY_TEST_ENCRYPTION_KEY", default="")
+
+PAYSTACK_SECRET = config('PAYSTACK_SECRET', default="")
+PAYSTACK_PUBLIC = config('PAYSTACK_PUBLIC', default="")
+PAYSTACK_WEBHOOK_SECRET = config('PAYSTACK_WEBHOOK_SECRET', default="")
+PAYSTACK_WEBHOOK_URL = config('PAYSTACK_WEBHOOK_URL', default="https://f43d38558991.ngrok-free.app/api/transactions/webhook/")
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 

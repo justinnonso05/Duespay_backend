@@ -6,21 +6,20 @@ from .views import (
     PaymentStatusView,
     TransactionReceiptDetailView,
     TransactionViewSet,
-    korapay_webhook,
-    InitiateBankTransferView,
+    paystack_webhook,
 )
 
 router = DefaultRouter()
 router.register("", TransactionViewSet)
 
 urlpatterns = [
-    path("webhook/", korapay_webhook, name="korapay-webhook"),
+    path("webhook/", paystack_webhook, name="paystack-webhook"),  # Updated
     path(
         "receipts/<str:receipt_id>/",
         TransactionReceiptDetailView.as_view(),
         name="receipt-detail",
     ),
-    path("payment/initiate/", InitiateBankTransferView.as_view(), name="initiate-payment"),
+    path("payment/initiate/", InitiatePaymentView.as_view(), name="initiate-payment"),  # Card + Bank  # Bank only
     path(
         "payment/status/<str:reference_id>/",
         PaymentStatusView.as_view(),

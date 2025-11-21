@@ -23,7 +23,12 @@ from payers.models import Payer
 from payments.models import PaymentItem, ReceiverBankAccount
 from transactions.models import Transaction
 
-from .chargeServices import is_valid_signature, korapay_init_bank_transfer, korapay_init_charge, korapay_payout_bank
+print("DEBUG: Starting to import paystackServices")
+
+from .paystackServices import (
+    is_valid_paystack_signature,
+    paystack_init_charge
+)
 from .models import Transaction, TransactionReceipt
 from .serializers import TransactionReceiptDetailSerializer, TransactionSerializer
 
@@ -256,185 +261,20 @@ class InitiatePaymentView(APIView):
                 status=400,
             )
 
-        # Base total (DB), add platform fee to charge only
-        base_total = sum((item.amount for item in items_qs), Decimal("0.00"))
-        platform_fee = Decimal(str(getattr(settings, "PLATFORM_PAYOUT_FEE_NGN", "100.00")))
-        platform_percent = Decimal(str(getattr(settings, "PLATFORM_PAYIN_PERCENT", "0.015")))
-        charge_amount = base_total + platform_fee + (base_total * platform_percent)
-
-        # Create pending transaction with base amount only (exclude fee)
-        txn = Transaction.objects.create(
-            payer=payer,
-            association=association,
-            amount_paid=base_total,
-            is_verified=False,
-            session=session,
-        )
-        txn.payment_items.set(items_qs)
-
-        # Customer mapping (payer/platform/association)
-        source = str(
-            getattr(settings, "KORAPAY_CHARGE_CUSTOMER_SOURCE", "payer")
-        ).lower()
-        platform_name = getattr(settings, "PLATFORM_NAME", "Duespay")
-        platform_email = getattr(settings, "PLATFORM_EMAIL", "justondev05@gmail.com")
-
-        if source == "platform":
-            full_name = platform_name
-            email = platform_email
-        elif source == "association":
-            assoc_name = (
-                getattr(association, "association_name", None)
-                or getattr(association, "association_short_name", None)
-                or str(association)
-            )
-            admin_email = getattr(
-                getattr(association, "adminuser", None), "email", None
-            ) or getattr(getattr(association, "admin", None), "email", None)
-            full_name = assoc_name
-            email = admin_email or platform_email
-        else:
-            full_name = (
-                data.get("payer_name")
-                or f"{getattr(payer, 'first_name', '')} {getattr(payer, 'last_name', '')}"
-            ).strip() or "DuesPay User"
-            email = (
-                data.get("payer_email")
-                or getattr(payer, "email", None)
-                or platform_email
-            )
-        if "@" not in str(email):
-            email = platform_email
-        customer = {"name": full_name, "email": email}
-
-        # Frontend redirect with association info
-        frontend = getattr(settings, "KORAPAY_REDIRECT_URL", None) or getattr(
-            settings, "FRONTEND_URL", "https://duespay.vercel.app"
-        )
-        redirect_url = f"{str(frontend).rstrip('/')}/payment/callback?assoc={association.association_short_name}"
-        
-
-        # Metadata for reconciliation
-        metadata = {
-            "txn_ref": txn.reference_id,
-            "platform_fee": str(platform_fee),
-            "base_amount": str(base_total),
-            "association_id": association.id,
-            "payer_id": payer.id,
-        }
-
-        logger.info(
-            f"[INITIATE] ref={txn.reference_id} base={base_total} fee={platform_fee} charge={charge_amount} customer={customer} redirect={redirect_url}"
-        )
-        print(
-            f"[{timezone.now().isoformat()}] INITIATE ref={txn.reference_id} base={base_total} fee={platform_fee} charge={charge_amount}"
-        )
-
-        try:
-            korapay_res = korapay_init_charge(
-                amount=str(charge_amount),
-                currency="NGN",
-                reference=txn.reference_id,
-                customer=customer,
-                redirect_url=redirect_url,
-                metadata=metadata,  # NEW
-            )
-        except Exception:
-            logger.exception(
-                f"[INITIATE][ERROR] ref={txn.reference_id} Korapay init failed"
-            )
-            return Response({"error": "Failed to initialize payment"}, status=502)
-
-        data_obj = korapay_res.get("data") or {}
-        checkout_url = data_obj.get("checkout_url") or data_obj.get("authorization_url")
-        if not checkout_url:
-            logger.error(
-                f"[INITIATE][ERROR] ref={txn.reference_id} Missing checkout_url resp={korapay_res}"
-            )
-            return Response(
-                {
-                    "error": "Korapay did not return a checkout URL",
-                    "provider_response": korapay_res,
-                },
-                status=502,
-            )
-
-        logger.info(
-            f"[INITIATE][OK] ref={txn.reference_id} checkout_url={checkout_url}"
-        )
-        # Return both base and gross for UI clarity (amount kept for backward compatibility)
-        return Response(
-            {
-                "reference_id": txn.reference_id,
-                "amount": str(base_total),
-                "platform_fee": str(platform_fee),
-                "total_payable": str(charge_amount),
-                "checkout_url": checkout_url,
-            },
-            status=201,
-        )
-
-
-class InitiateBankTransferView(APIView):
-    """
-    Create bank transfer payment with dynamic virtual account.
-    Customer bears the transaction cost.
-    """
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        data = request.data or {}
-        required = ["payer_id", "association_id", "session_id", "payment_item_ids"]
-        missing = [k for k in required if k not in data]
-        if missing:
-            return Response(
-                {"success": False, "message": f"Missing fields: {', '.join(missing)}"}, status=400
-            )
-
-        try:
-            payer = Payer.objects.get(pk=data["payer_id"])
-            association = Association.objects.get(pk=data["association_id"])
-            session = Session.objects.get(
-                pk=data["session_id"], association=association
-            )
-        except (Payer.DoesNotExist, Association.DoesNotExist, Session.DoesNotExist):
-            return Response(
-                {"success": False, "message": "Invalid payer_id, association_id, or session_id"}, status=400
-            )
-
-        item_ids = data.get("payment_item_ids") or []
-        if not isinstance(item_ids, list) or not item_ids:
-            return Response(
-                {"success": False, "message": "payment_item_ids must be a non-empty list"}, status=400
-            )
-        items_qs = PaymentItem.objects.filter(id__in=item_ids, session=session)
-        if items_qs.count() != len(set(item_ids)):
-            return Response(
-                {"success": False, "message": "One or more payment items not found for the session"},
-                status=400,
-            )
-
-        # Calculate base total (what association receives)
-        base_total = sum((item.amount for item in items_qs), Decimal("0.00"))
-        
-        # Optional: Platform fees (placeholders - customer bears Korapay fees)
-        platform_fee = Decimal(str(getattr(settings, "PLATFORM_PAYOUT_FEE_NGN", "0.00")))  # Placeholder
-        platform_percent = Decimal(str(getattr(settings, "PLATFORM_PAYIN_PERCENT", "0.00")))  # Placeholder
-        
-        # For bank transfer, customer bears Korapay fees, so charge amount = base amount
-        charge_amount = base_total + platform_fee + (base_total * platform_percent)
+        # Calculate total amount from payment items (no fees)
+        total_amount = sum((item.amount for item in items_qs), Decimal("0.00"))
 
         # Create pending transaction
         txn = Transaction.objects.create(
             payer=payer,
             association=association,
-            amount_paid=base_total,  # Store base amount (what association gets)
+            amount_paid=total_amount,
             is_verified=False,
             session=session,
         )
         txn.payment_items.set(items_qs)
 
-        # Customer details - Use payer data from backend (removed client-side overrides)
+        # Customer details - always use payer information
         full_name = f"{getattr(payer, 'first_name', '')} {getattr(payer, 'last_name', '')}".strip() or "DuesPay User"
         email = getattr(payer, "email", None) or getattr(settings, "PLATFORM_EMAIL", "justondev05@gmail.com")
         
@@ -444,264 +284,123 @@ class InitiateBankTransferView(APIView):
         
         customer = {"name": full_name, "email": email}
 
-        # Notification URL (webhook)
-        notification_url = getattr(settings, "KORAPAY_WEBHOOK_URL", None)
-        if not notification_url:
-            # Construct from current domain if not set
-            base_url = getattr(settings, "BACKEND_URL", "https://duespay.onrender.com")
-            notification_url = f"{base_url.rstrip('/')}/api/transactions/webhook/"
-
-        # Account name for the virtual account
-        account_name = f"{association.association_short_name}-checkout"  # Keep reasonable length
-
-        # Narration
-        narration = f"Dues payment for {association.association_short_name}"
+        # Frontend redirect with association info
+        frontend = getattr(settings, "FRONTEND_URL", "https://duespay.vercel.app")
+        redirect_url = f"{str(frontend).rstrip('/')}/payment/callback?assoc={association.association_short_name}"
 
         # Metadata for reconciliation
         metadata = {
             "txn_ref": txn.reference_id,
-            "assoc_id": str(association.id),
-            "payer_id": str(payer.id),
-            "base_amount": str(base_total),
+            "association_id": association.id,
+            "payer_id": payer.id,
+            "amount": str(total_amount),
         }
 
         logger.info(
-            f"[BANK_TRANSFER] ref={txn.reference_id} base={base_total} charge={charge_amount} customer={customer}"
+            f"[INITIATE] ref={txn.reference_id} amount={total_amount} customer={customer} redirect={redirect_url}"
+        )
+        print(
+            f"[{timezone.now().isoformat()}] INITIATE ref={txn.reference_id} amount={total_amount}"
         )
 
         try:
-            korapay_res = korapay_init_bank_transfer(
-                amount=str(base_total),
+            paystack_res = paystack_init_charge(
+                amount=str(total_amount),
                 currency="NGN",
                 reference=txn.reference_id,
                 customer=customer,
-                # notification_url=notification_url,
-                account_name=account_name,
-                narration=narration,
+                redirect_url=redirect_url,
                 metadata=metadata,
-                merchant_bears_cost=False,  # Customer bears cost
             )
-        except Exception as e:
+        except Exception:
             logger.exception(
-                f"[BANK_TRANSFER][ERROR] ref={txn.reference_id} Korapay init failed: {e}"
+                f"[INITIATE][ERROR] ref={txn.reference_id} Paystack init failed"
             )
-            return Response({
-                "success": False, 
-                "message": "Failed to initialize bank transfer payment"
-            }, status=502)
+            return Response({"error": "Failed to initialize payment"}, status=502)
 
-        # Extract response data
-        if not korapay_res.get("status"):
+        data_obj = paystack_res.get("data") or {}
+        checkout_url = data_obj.get("authorization_url")
+        if not checkout_url:
             logger.error(
-                f"[BANK_TRANSFER][ERROR] ref={txn.reference_id} Korapay error: {korapay_res}"
+                f"[INITIATE][ERROR] ref={txn.reference_id} Missing authorization_url resp={paystack_res}"
             )
-            return Response({
-                "success": False,
-                "message": korapay_res.get("message", "Bank transfer initialization failed"),
-                "provider_response": korapay_res,
-            }, status=502)
-
-        data_obj = korapay_res.get("data", {})
-        bank_account = data_obj.get("bank_account", {})
-        amount_with_fee = float(base_total) + float(data_obj.get("fee", 0)) + float(data_obj.get("vat", 0))
-        
-        # Calculate expiry time in seconds
-        expiry_seconds = None
-        expiry_date_str = bank_account.get("expiry_date_in_utc")
-        if expiry_date_str:
-            try:
-                expiry_date = parse_datetime(expiry_date_str)
-                if expiry_date:
-                    now = datetime.now(expiry_date.tzinfo)
-                    expiry_seconds = int((expiry_date - now).total_seconds())
-                    expiry_seconds = max(0, expiry_seconds)  # Ensure non-negative
-            except Exception as e:
-                logger.warning(f"[BANK_TRANSFER] Failed to parse expiry date: {e}")
+            return Response(
+                {
+                    "error": "Paystack did not return an authorization URL",
+                    "provider_response": paystack_res,
+                },
+                status=502,
+            )
 
         logger.info(
-            f"[BANK_TRANSFER][OK] ref={txn.reference_id} account={bank_account.get('account_number')} bank={bank_account.get('bank_name')}"
+            f"[INITIATE][OK] ref={txn.reference_id} authorization_url={checkout_url}"
+        )
+        
+        # Clean response without fees
+        return Response(
+            {
+                "reference_id": txn.reference_id,
+                "amount": str(total_amount),
+                "checkout_url": checkout_url,
+            },
+            status=201,
         )
 
-        return Response({
-            "success": True,
-            "message": "Bank transfer payment initiated successfully",
-            "data": {
-                "reference_id": txn.reference_id,
-                "amount": str(base_total),
-                "total_payable": str(amount_with_fee),
-                "currency": data_obj.get("currency", "NGN"),
-                "amount_expected": data_obj.get("amount_expected"),
-                "fee": data_obj.get("fee"),
-                "vat": data_obj.get("vat"),
-                "status": data_obj.get("status", "processing"),
-                "bank_account": {
-                    "account_name": bank_account.get("account_name"),
-                    "account_number": bank_account.get("account_number"),
-                    "bank_name": bank_account.get("bank_name"),
-                    "bank_code": bank_account.get("bank_code"),
-                    "expiry_date_in_utc": bank_account.get("expiry_date_in_utc"),
-                    "expiry_seconds": expiry_seconds,
-                },
-                "customer": data_obj.get("customer"),
-                "narration": data_obj.get("narration"),
-            }
-        }, status=201)
-
-
+# New Paystack Webhook
 @csrf_exempt
 @require_http_methods(["POST"])
-def korapay_webhook(request):
+def paystack_webhook(request):
     """
-    Verifies Korapay signature, resolves transaction by merchant reference,
-    and marks it verified. Handles provider ref fallback gracefully.
+    Handles Paystack webhook events for payment verification
     """
-    signature = request.headers.get("x-korapay-signature") or request.headers.get(
-        "X-KoraPay-Signature"
-    )
-    if not is_valid_signature(request.body, signature):
-        logger.warning("[WEBHOOK] invalid signature")
+    signature = request.headers.get("x-paystack-signature")
+    if not is_valid_paystack_signature(request.body, signature):
+        logger.warning("[PAYSTACK_WEBHOOK] invalid signature")
         return HttpResponseForbidden()
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
-        logger.error("[WEBHOOK] invalid JSON")
+        logger.error("[PAYSTACK_WEBHOOK] invalid JSON")
         return HttpResponse(status=200)
 
     event = payload.get("event")
     data = payload.get("data") or {}
-    logger.info(f"[WEBHOOK] event={event} data_keys={list(data.keys())}")
-    print(f"[{timezone.now().isoformat()}] WEBHOOK event={event}")
+    logger.info(f"[PAYSTACK_WEBHOOK] event={event} data_keys={list(data.keys())}")
+    print(f"[{timezone.now().isoformat()}] PAYSTACK_WEBHOOK event={event}")
 
-    if event != "charge.success":
+    # Handle successful charge events
+    if event not in ("charge.success", "transfer.success"):
         return HttpResponse(status=200)
 
-    # Resolve transaction by merchant reference preference
-    candidates = []
-    for key in ("transaction_reference", "reference", "order_reference"):
-        val = data.get(key)
-        if val:
-            candidates.append(val)
-    meta = data.get("metadata") or {}
-    for key in ("txn_ref", "reference", "transaction_reference", "order_ref"):
-        val = meta.get(key)
-        if val:
-            candidates.append(val)
+    # Get reference from webhook data
+    reference = data.get("reference")
+    if not reference:
+        logger.warning("[PAYSTACK_WEBHOOK] No reference in webhook data")
+        return HttpResponse(status=200)
 
-    txn = None
-    for ref in candidates:
-        try:
-            txn = Transaction.objects.get(reference_id=ref)
-            break
-        except Transaction.DoesNotExist:
-            continue
-
-    if not txn:
-        logger.warning(f"[WEBHOOK] no Transaction match for refs={candidates}")
+    try:
+        txn = Transaction.objects.get(reference_id=reference)
+    except Transaction.DoesNotExist:
+        logger.warning(f"[PAYSTACK_WEBHOOK] No transaction found for ref={reference}")
         return HttpResponse(status=200)
 
     if txn.is_verified:
-        logger.info(f"[WEBHOOK] already verified ref={txn.reference_id}")
+        logger.info(f"[PAYSTACK_WEBHOOK] Already verified ref={txn.reference_id}")
         return HttpResponse(status=200)
 
-    meta = data.get("metadata") or {}
-    amt = data.get("amount")
-    base_amount = None
-    try:
-        if "base_amount" in meta:
-            base_amount = Decimal(str(meta.get("base_amount")))
-        elif amt is not None and "platform_fee" in meta:
-            base_amount = Decimal(str(amt)) - Decimal(str(meta.get("platform_fee")))
-    except Exception:
-        logger.warning(
-            f"[WEBHOOK] base_amount derive failed ref={txn.reference_id} amt={amt} meta={meta}"
-        )
+    # Get amount from webhook (in kobo, convert to naira)
+    amount_kobo = data.get("amount", 0)
+    amount_naira = Decimal(str(amount_kobo)) / 100
 
-    # Keep DB amount as base amount (exclude fee)
-    if base_amount is not None:
-        if txn.amount_paid != base_amount:
-            logger.info(
-                f"[WEBHOOK] reconciling amount ref={txn.reference_id} db={txn.amount_paid} -> base={base_amount}"
-            )
-            txn.amount_paid = base_amount
-    # else: leave txn.amount_paid as created (base_total)
-
+    # Update transaction
+    txn.amount_paid = amount_naira
     txn.is_verified = True
     txn.save(update_fields=["amount_paid", "is_verified"])
-    logger.info(f"[WEBHOOK][VERIFIED] ref={txn.reference_id} amount={txn.amount_paid}")
-    print(
-        f"[{timezone.now().isoformat()}] VERIFIED ref={txn.reference_id} amount={txn.amount_paid}"
-    )
+    
+    logger.info(f"[PAYSTACK_WEBHOOK][VERIFIED] ref={txn.reference_id} amount={txn.amount_paid}")
+    print(f"[{timezone.now().isoformat()}] PAYSTACK VERIFIED ref={txn.reference_id} amount={txn.amount_paid}")
 
-    # Auto-payout (immediate). Optional "bulk for halls" switch, default immediate.
-    # try:
-    #     # Decide if association is a hall
-    #     assoc = txn.association
-    #     assoc_type = (
-    #         getattr(assoc, "association_type", None)
-    #         or getattr(assoc, "type", None)
-    #         or getattr(assoc, "category", None)
-    #     )
-    #     is_hall = str(assoc_type or "").lower() == "hall"
-
-    #     use_bulk_for_halls = bool(
-    #         getattr(settings, "KORAPAY_USE_BULK_FOR_HALLS", False)
-    #     )
-    #     if is_hall and use_bulk_for_halls:
-    #         logger.info(
-    #             f"[PAYOUT][SKIP-NOQUEUE] Hall association detected (id={assoc.id}). Configure a queue/worker to batch payouts."
-    #         )
-    #         print(
-    #             f"[{timezone.now().isoformat()}] PAYOUT skipped for hall (bulk mode on). ref={txn.reference_id}"
-    #         )
-    #         return HttpResponse(status=200)
-
-    #     # Immediate payout path
-    #     rcv = ReceiverBankAccount.objects.filter(association=assoc).first()
-    #     if not rcv:
-    #         logger.warning(
-    #             f"[PAYOUT][SKIP] no ReceiverBankAccount assoc_id={assoc.id} ref={txn.reference_id}"
-    #         )
-    #         print(
-    #             f"[{timezone.now().isoformat()}] PAYOUT skipped (no bank) ref={txn.reference_id}"
-    #         )
-    #         return HttpResponse(status=200)
-
-    #     payout_ref = f"{txn.reference_id}-OUT"[:40]  # idempotent
-    #     narration = f"Dues payout {txn.reference_id}"[:80]
-    #     assoc_name = (
-    #         getattr(assoc, "association_name", None)
-    #         or getattr(assoc, "association_short_name", None)
-    #         or str(assoc)
-    #     )
-    #     assoc_email = (
-    #         getattr(getattr(assoc, "adminuser", None), "email", None)
-    #         or getattr(getattr(assoc, "admin", None), "email", None)
-    #         or getattr(settings, "PLATFORM_EMAIL", "justondev05@gmail.com")
-    #     )
-
-    #     logger.info(
-    #         f"[PAYOUT][START] ref={payout_ref} bank={getattr(rcv,'bank_code',None)} acct={getattr(rcv,'account_number',None)} amount={txn.amount_paid} assoc_id={assoc.id}"
-    #     )
-    #     print(
-    #         f"[{timezone.now().isoformat()}] PAYOUT START ref={payout_ref} amount={txn.amount_paid}"
-    #     )
-
-    #     korapay_payout_bank(
-    #         amount=str(txn.amount_paid),
-    #         bank_code=getattr(rcv, "bank_code", ""),
-    #         account_number=getattr(rcv, "account_number", ""),
-    #         reference=payout_ref,
-    #         narration=narration,
-    #         customer={"name": assoc_name, "email": assoc_email},
-    #     )
-
-    #     logger.info(f"[PAYOUT][END] ref={payout_ref} ok")
-    #     print(f"[{timezone.now().isoformat()}] PAYOUT OK ref={payout_ref}")
-
-    # except Exception:
-    #     logger.exception(f"[PAYOUT][ERROR] ref={txn.reference_id}")
-    #     print(f"[{timezone.now().isoformat()}] PAYOUT ERROR ref={txn.reference_id}")
     return HttpResponse(status=200)
 
 

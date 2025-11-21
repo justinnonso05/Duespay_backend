@@ -16,10 +16,12 @@ CORS_ALLOWED_ORIGINS = [
     "https://duespay.app",
     "https://www.duespay.app",
     "http://localhost:5173",
+    "http://localhost:8000"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://duespay-backend.fly.dev",
+    "http://localhost:8000",
     "https://duespay.onrender.com",
     "https://duespay.pythonanywhere.com",
     "https://duespay-5hrhv.sevalla.app",
@@ -49,7 +51,8 @@ ALLOWED_HOSTS = [
     "duespay.onrender.com",
     "duespay-backend.fly.dev",
     "duespay-backend-production.up.railway.app",
-    "duespay-5hrhv.sevalla.app"
+    "duespay-5hrhv.sevalla.app",
+    "localhost"
 ]
 
 
@@ -77,6 +80,11 @@ DEFAULT_FROM_EMAIL = "DuesPay <jcmailer.1@gmail.com>"
 KORAPAY_SECRET_KEY = config("KORAPAY_SECRET_KEY", default="")
 KORAPAY_PUBLIC_KEY = config("KORAPAY_PUBLIC_KEY", default="")
 KORAPAY_ENCRYPTION_KEY = config("KORAPAY_ENCRYPTION_KEY", default="")
+
+PAYSTACK_SECRET = config('PAYSTACK_SECRET', default="")
+PAYSTACK_PUBLIC = config('PAYSTACK_PUBLIC', default="")
+PAYSTACK_WEBHOOK_SECRET = config('PAYSTACK_WEBHOOK_SECRET', default="")
+PAYSTACK_WEBHOOK_URL = config('PAYSTACK_WEBHOOK_URL', default="https://f43d38558991.ngrok-free.app/api/transactions/webhook/")
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
