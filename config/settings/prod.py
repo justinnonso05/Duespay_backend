@@ -26,6 +26,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://duespay.pythonanywhere.com",
     "https://duespay-5hrhv.sevalla.app",
     "https://duespay-backend-production.up.railway.app",
+    "https://duespay-backend.onrender.com",
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -48,6 +49,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 ALLOWED_HOSTS = [
     "duespay.pythonanywhere.com",
+    "duespay-backend.onrender.com"
     "duespay.onrender.com",
     "duespay-backend.fly.dev",
     "duespay-backend-production.up.railway.app",
