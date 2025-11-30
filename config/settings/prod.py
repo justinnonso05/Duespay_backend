@@ -49,7 +49,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 ALLOWED_HOSTS = [
     "duespay.pythonanywhere.com",
-    "duespay-backend.onrender.com"
+    "duespay-backend.onrender.com",
     "duespay.onrender.com",
     "duespay-backend.fly.dev",
     "duespay-backend-production.up.railway.app",
